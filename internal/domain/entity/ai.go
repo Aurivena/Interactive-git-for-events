@@ -1,18 +1,21 @@
 package entity
 
+import "encoding/json"
+
 type UserSend struct {
-	Message string   `json:"message"`
-	Lat     *float64 `json:"lat,omitempty"`
-	Lon     *float64 `json:"lon,omitempty"`
+	Message string   `json:"message" example:"Хочу сходить в кино и ресторан"`
+	Lat     *float64 `json:"lat,omitempty" example:"55.434630"`
+	Lon     *float64 `json:"lon,omitempty" example:"65.353470"`
 }
 
 type PlaceInfo struct {
-	ID          string  `json:"id" db:"id"`
-	Title       string  `json:"title" db:"title"`
-	Description *string `json:"description" db:"description"`
-	Address     string  `json:"address" db:"address"`
-	Lon         float64 `json:"lon" db:"lon"`
-	Lat         float64 `json:"lat" db:"lat"`
+	ID          string          `json:"id" db:"id"`
+	Title       string          `json:"title" db:"title"`
+	Description *string         `json:"description" db:"description"`
+	Address     string          `json:"address" db:"address"`
+	Lon         float64         `json:"lon" db:"lon"`
+	Lat         float64         `json:"lat" db:"lat"`
+	Tags        json.RawMessage `json:"tags" db:"tags" swaggertype:"object"`
 }
 
 type RequestPayload struct {
@@ -26,6 +29,6 @@ type RequestPayload struct {
 }
 
 type ChatOutput struct {
-	PlaceInfo []PlaceInfo
-	Message   string `json:"message"`
+	PlaceInfo []PlaceInfo `json:"placesInfo"`
+	Message   string      `json:"message"`
 }

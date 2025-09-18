@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS place (
     lon      double precision NOT NULL ,
     lat      double precision NOT NULL ,
     tier tier_enum NOT NULL ,
-    kind     kind_enum NOT NULL
+    kind     kind_enum NOT NULL,
+    tags jsonb
 );
 
 CREATE TABLE IF NOT EXISTS place_schedule (

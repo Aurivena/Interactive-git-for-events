@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"arch/internal/domain/entity"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
@@ -19,14 +20,14 @@ func (r *PlaceGet) Get(params *entity.RequestPayload, centerLon, centerLat *floa
 	var result []entity.PlaceInfo
 
 	base := `
-		SELECT title,address,description,lon,lat
+		SELECT DISTINCT ON (p.id) id, title,address,description,lon,lat,tags
 		FROM place p
 		LEFT JOIN place_schedule ps ON ps.place_id = p.id
 		WHERE 1=1
 `
 
 	sql, args := builderSQL(params, base, centerLon, centerLat)
-	sql += " GROUP BY p.id ORDER BY p.title LIMIT 50"
+	sql += fmt.Sprintf(" ORDER BY p.id, RANDOM() LIMIT %d", params.Count)
 
 	if err := r.db.Select(&result, sql, args...); err != nil {
 		logrus.Error(err)
