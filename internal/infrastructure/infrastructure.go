@@ -1,8 +1,13 @@
 package infrastructure
 
-import "github.com/jmoiron/sqlx"
+import (
+	"arch/internal/application/ports"
+
+	"github.com/jmoiron/sqlx"
+)
 
 type Infrastructure struct {
+	PlaceGet ports.PlaceGetter
 }
 
 type Sources struct {
@@ -10,5 +15,7 @@ type Sources struct {
 }
 
 func New(sources *Sources) *Infrastructure {
-	return &Infrastructure{}
+	return &Infrastructure{
+		PlaceGet: NewPlace(sources.BusinessDB),
+	}
 }

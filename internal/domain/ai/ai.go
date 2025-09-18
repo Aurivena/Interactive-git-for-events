@@ -5,19 +5,24 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
+
+	"fmt"
+
 	"net/http"
-	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
-	methodPost = "POST"
+	methodPost   = "POST"
+	DefaultCount = 3
+	url          = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s"
 )
 
 var (
-	timeout = time.Second * 100
+	defaultTimeout = time.Second * 100
 )
 
 type Ai struct {
@@ -34,43 +39,38 @@ func New(cfg entity.AiConfig) *Ai {
 	return &Ai{
 		ai: cfg,
 		client: &http.Client{
-			Timeout:   0,
+			Timeout:   defaultTimeout,
 			Transport: tr,
 		},
 	}
 }
 
-func (q *Ai) Send(ctx context.Context, message string) ([]entity.AiPlace, error) {
+func (q *Ai) Send(ctx context.Context, message string) ([]entity.RequestPayload, error) {
 	if q.client == nil {
-		q.client = &http.Client{Timeout: timeout}
+		q.client = &http.Client{Timeout: defaultTimeout}
 	}
-	prompt, err := q.buildPayload(message)
+	payload, err := q.buildPayload(message)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, methodPost, "https://openrouter.ai/api/v1/chat/completions", strings.NewReader(prompt))
+	req, err := http.NewRequest(methodPost, fmt.Sprintf(url, q.ai.Model, q.ai.ApiKey), bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+q.ai.ApiKey)
+	req.Header.Set("User-Agent", "arch-ai-client/1.0")
 
 	resp, err := q.client.Do(req)
 	if err != nil {
+		logrus.Error("error at send request from AI", err)
 		return nil, err
 	}
-
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
 			fmt.Printf("close body error: %v\n", err)
 		}
 	}()
-
-	if resp.StatusCode/100 != 2 {
-		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-		return nil, fmt.Errorf("bad status %s; body: %s", resp.Status, string(snippet))
-	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -78,6 +78,14 @@ func (q *Ai) Send(ctx context.Context, message string) ([]entity.AiPlace, error)
 			return nil, fmt.Errorf("499")
 		}
 		return nil, fmt.Errorf("read body: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		msg := string(b)
+		if len(msg) > 2_000 {
+			msg = msg[:2_000] + "..."
+		}
+		return nil, fmt.Errorf("AI http %d: %s", resp.StatusCode, msg)
 	}
 
 	output, err := buildOutput(bytes.NewReader(b))

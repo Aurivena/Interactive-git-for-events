@@ -42,9 +42,9 @@ func (h *Http) InitHTTPHttps(config *entity.ServerConfig) *gin.Engine {
 	api := gHttp.Group("/api")
 	{
 
-		group := api.Group("/group")
+		group := api.Group("/ai")
 		{
-			group.POST("", h.Ai.Send)
+			group.POST("/send", h.Ai.Send)
 		}
 
 	}

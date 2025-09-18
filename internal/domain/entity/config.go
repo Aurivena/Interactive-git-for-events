@@ -28,7 +28,6 @@ type BusinessDBConfig struct {
 }
 
 type AiConfig struct {
-	ApiKey string `json:"qwq_api_key" binding:"required"`
-	Url    string `json:"qwq_url" binding:"required"`
-	Model  string `json:"qwq_model" binding:"required"`
+	Model  string `json:"model" binding:"required"`
+	ApiKey string `json:"api_key" binding:"required"`
 }

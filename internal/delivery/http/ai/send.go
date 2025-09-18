@@ -11,7 +11,7 @@ import (
 )
 
 func (h *Handler) Send(c *gin.Context) {
-	var input entity.Send
+	var input entity.UserSend
 	if err := c.ShouldBindJSON(&input); err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
 			Code: http.StatusBadRequest,
