@@ -1,8 +1,13 @@
-INIT MVP PRODUCT
+# INIT MVP PRODUCT
 
 #### Установка зависимостей
 ```bash
     go install github.com/swaggo/swag/cmd/swag@latest
+```
+
+#### Docs
+```bash
+make swagger
 ```
 
 ### configs/config.json
