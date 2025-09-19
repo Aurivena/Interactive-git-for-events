@@ -82,6 +82,8 @@ func (q *Ai) Send(ctx context.Context, message string) ([]entity.RequestPayload,
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg := string(b)
+		logrus.Warn(resp.StatusCode)
+		logrus.Error("error at send request from AI", msg)
 		if len(msg) > 2_000 {
 			msg = msg[:2_000] + "..."
 		}
