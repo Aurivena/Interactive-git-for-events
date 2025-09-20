@@ -16,7 +16,7 @@ import (
 // @Description Возвращает полный список мест.
 // @Produce     json
 // @Success     200 {array}  entity.PlaceInfoDoc         "Список мест"
-// @Failure     500 {object} entity.AppError      "Внутренняя ошибка сервера (Spond error)"
+// @Failure     500 {object} entity.AppErrorDoc      "Внутренняя ошибка сервера (Spond error)"
 // @Router      /places [get]
 func (h *Handler) List(c *gin.Context) {
 	output, err := h.application.List()
@@ -43,9 +43,9 @@ func (h *Handler) List(c *gin.Context) {
 // @Produce     json
 // @Param       id   path   string true "ID места (UUID, формат: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)"
 // @Success     200  {object} entity.PlaceInfoDoc        "Место найдено"
-// @Failure     400  {object} entity.AppError     "Некорректный формат ID (Spond error)"
-// @Failure     404  {object} entity.AppError     "Место не найдено (Spond error)"
-// @Failure     500  {object} entity.AppError     "Внутренняя ошибка сервера (Spond error)"
+// @Failure     400  {object} entity.AppErrorDoc     "Некорректный формат ID (Spond error)"
+// @Failure     404  {object} entity.AppErrorDoc     "Место не найдено (Spond error)"
+// @Failure     500  {object} entity.AppErrorDoc     "Внутренняя ошибка сервера (Spond error)"
 // @Router      /places/{id} [get]
 func (h *Handler) ByID(c *gin.Context) {
 	id := entity.UUID(c.Param("id"))
@@ -99,8 +99,8 @@ func (h *Handler) ByID(c *gin.Context) {
 // @Produce     json
 // @Param       kind path string true "Тип места (enum)" Enums(cinema,theatre,concert_hall,stadium,sport,museum,art_gallery,historic,memorial,park,zoo,aquapark,attraction,church,monastery,mosque,synagogue,mall,market,monument,restaurant)
 // @Success     200  {array}  entity.PlaceInfoDoc        "Список мест по типу"
-// @Failure     400  {object} entity.AppError     "Некорректное значение kind (Spond error)"
-// @Failure     500  {object} entity.AppError     "Внутренняя ошибка сервера (Spond error)"
+// @Failure     400  {object} entity.AppErrorDoc     "Некорректное значение kind (Spond error)"
+// @Failure     500  {object} entity.AppErrorDoc     "Внутренняя ошибка сервера (Spond error)"
 // @Router      /places/kind/{kind} [get]
 func (h *Handler) ListByKind(c *gin.Context) {
 	kind := entity.Kind(c.Param("kind"))

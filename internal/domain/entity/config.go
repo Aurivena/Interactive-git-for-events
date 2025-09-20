@@ -5,7 +5,6 @@ type ConfigService struct {
 	BusinessDB   BusinessDBConfig   `json:"business-database" binding:"required"`
 	QwQ          AiConfig           `json:"ai" binding:"required"`
 	Certificates CertificatesConfig `json:"certificates" binding:"required"`
-	Proxy        ProxyConfig        `json:"proxy" binding:"required"`
 }
 
 type CertificatesConfig struct {
@@ -31,8 +30,4 @@ type BusinessDBConfig struct {
 type AiConfig struct {
 	Model  string `json:"model" binding:"required"`
 	ApiKey string `json:"api_key" binding:"required"`
-}
-
-type ProxyConfig struct {
-	Url string `json:"url" binding:"required"`
 }

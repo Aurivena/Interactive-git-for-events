@@ -1,6 +1,6 @@
 package entity
 
-type AppError struct {
+type AppErrorDoc struct {
 	Code   int         `json:"code"`
 	Detail ErrorDetail `json:"detail"`
 }

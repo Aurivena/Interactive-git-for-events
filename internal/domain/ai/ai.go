@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	"fmt"
 
@@ -20,19 +21,34 @@ const (
 	url          = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s"
 )
 
+var (
+	defaultTimeout = time.Second * 100
+)
+
 type Ai struct {
 	ai     entity.AiConfig
 	client *http.Client
 }
 
-func New(cfg entity.AiConfig, httpClient *http.Client) *Ai {
+func New(cfg entity.AiConfig) *Ai {
+	tr := &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     100 * time.Second,
+	}
 	return &Ai{
-		ai:     cfg,
-		client: httpClient,
+		ai: cfg,
+		client: &http.Client{
+			Timeout:   5 * time.Second,
+			Transport: tr,
+		},
 	}
 }
 
 func (q *Ai) Send(message string) ([]entity.RequestPayload, error) {
+	if q.client == nil {
+		q.client = &http.Client{Timeout: defaultTimeout}
+	}
 	payload, err := q.buildPayload(message)
 	if err != nil {
 		return nil, err

@@ -16,8 +16,8 @@ import (
 // @Produce json
 // @Param input body entity.UserSend true "Данные для создания генерации ответа"
 // @Success      200           {object} []entity.ChatOutput  "Ответ сгенерирован"
-// @Failure      400           {object} entity.AppError         "Некорректные данные (Spond error)"
-// @Failure      500           {object} entity.AppError         "Внутренняя ошибка сервера (Spond error)"
+// @Failure      400           {object} entity.AppErrorDoc         "Некорректные данные (Spond error)"
+// @Failure      500           {object} entity.AppErrorDoc         "Внутренняя ошибка сервера (Spond error)"
 // @Router       /ai/send [post]
 func (h *Handler) Send(c *gin.Context) {
 	var input entity.UserSend

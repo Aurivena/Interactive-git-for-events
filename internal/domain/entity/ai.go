@@ -6,6 +6,7 @@ type UserSend struct {
 	Message string   `json:"message" example:"Хочу сходить в кино и ресторан"`
 	Lat     *float64 `json:"lat,omitempty" example:"55.434630"`
 	Lon     *float64 `json:"lon,omitempty" example:"65.353470"`
+	Istest  bool     `json:"istest,omitempty" example:"false"`
 }
 
 type PlaceInfo struct {
