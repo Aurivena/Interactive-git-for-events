@@ -32,6 +32,7 @@ type PlaceTags struct {
 type PlaceInfoDoc struct {
 	ID          string    `json:"id"          example:"0199574c-c996-7301-95af-4b76e8b6088a"`
 	Title       string    `json:"title"       example:"Pushka"`
+	Kind        string    `json:"kind" example:"cinema"`
 	Description *string   `json:"description" example:"Современный кинотеатр в центре города"`
 	Address     string    `json:"address"     example:"Курган, ул. Пушкина, 25, ТРЦ «Пушкинский», 3 этаж"`
 	Lon         float64   `json:"lon"         example:"65.318954"`

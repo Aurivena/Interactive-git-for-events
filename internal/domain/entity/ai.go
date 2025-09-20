@@ -11,6 +11,7 @@ type UserSend struct {
 type PlaceInfo struct {
 	ID          string          `json:"id" db:"id"`
 	Title       string          `json:"title" db:"title"`
+	Kind        string          `json:"kind" db:"kind"`
 	Description *string         `json:"description" db:"description"`
 	Address     string          `json:"address" db:"address"`
 	Lon         float64         `json:"lon" db:"lon"`
