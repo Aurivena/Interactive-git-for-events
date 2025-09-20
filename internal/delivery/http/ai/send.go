@@ -33,8 +33,19 @@ func (h *Handler) Send(c *gin.Context) {
 		})
 		return
 	}
-
-	output, err := h.application.SendAi(input)
+	sessionID := c.GetHeader("X-Session-ID")
+	if sessionID == "" {
+		h.spond.SendResponseError(c.Writer, &envelope.AppError{
+			Code: http.StatusBadRequest,
+			Detail: envelope.ErrorDetail{
+				Title:    "Не указан идентификатор сессии",
+				Message:  "Заголовок X-Session-ID обязателен для получения истории.",
+				Solution: "Добавьте X-Session-ID в заголовок запроса и повторите попытку.",
+			},
+		})
+		return
+	}
+	output, err := h.application.SendAi(input, sessionID)
 	if err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
 			Code: http.StatusInternalServerError,

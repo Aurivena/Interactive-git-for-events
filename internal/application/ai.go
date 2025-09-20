@@ -7,11 +7,16 @@ import (
 	"time"
 )
 
-func (a *Application) SendAi(input entity.UserSend) ([]entity.ChatOutput, error) {
+func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.ChatOutput, error) {
 	q := ai.New(*a.qwqConfig)
 
 	if input.Istest == true {
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
+		for _, val := range ExampleChatOutputs {
+			if err := a.post.History.Save(val, input.Message, sessionID); err != nil {
+				return nil, err
+			}
+		}
 		return ExampleChatOutputs, nil
 	}
 	params, err := q.Send(input.Message)
@@ -33,6 +38,10 @@ func (a *Application) SendAi(input entity.UserSend) ([]entity.ChatOutput, error)
 		if out != nil {
 			output[i].PlaceInfo = out
 			output[i].Message = params[i].Message
+		}
+
+		if err = a.post.History.Save(output[i], input.Message, sessionID); err != nil {
+			return nil, err
 		}
 	}
 

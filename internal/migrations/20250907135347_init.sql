@@ -2,6 +2,7 @@
 -- +goose StatementBegin
 -- schema
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TYPE  week_enum as enum('monday','tuesday','wednesday','thursday','friday','saturday','sunday');
 CREATE TYPE tier_enum as enum('economy','value','standard','premium','upscale');
@@ -41,6 +42,14 @@ CREATE TABLE IF NOT EXISTS place_schedule (
                 OR (spans_midnight = true)
             ))
         )
+);
+
+CREATE TABLE IF NOT EXISTS history (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    session varchar(255) NOT NULL ,
+    message text NOT NULL ,
+    ai_message jsonb NOT NULL,
+    created_at timestamp DEFAULT NOW() NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_tier_kind ON place(tier,kind);

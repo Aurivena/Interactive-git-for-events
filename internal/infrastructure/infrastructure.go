@@ -8,6 +8,7 @@ import (
 
 type Infrastructure struct {
 	PlaceGet ports.PlaceGetter
+	History  ports.History
 }
 
 type Sources struct {
@@ -17,5 +18,6 @@ type Sources struct {
 func New(sources *Sources) *Infrastructure {
 	return &Infrastructure{
 		PlaceGet: NewPlace(sources.BusinessDB),
+		History:  NewHistory(sources.BusinessDB),
 	}
 }

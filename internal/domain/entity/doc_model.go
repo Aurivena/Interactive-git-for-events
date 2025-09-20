@@ -39,3 +39,14 @@ type PlaceInfoDoc struct {
 	Lat         float64   `json:"lat"         example:"55.432190"`
 	Tags        PlaceTags `json:"tags"`
 }
+
+type ChatOutputDoc struct {
+	PlaceInfo []PlaceInfoDoc `json:"placesInfo"`
+	Message   string         `json:"message"`
+}
+
+type HistoryDoc struct {
+	ID        string        `json:"id" db:"id"`
+	Message   string        `json:"message" db:"message"`
+	AiMessage ChatOutputDoc `json:"ai_message" db:"ai_message"`
+}
