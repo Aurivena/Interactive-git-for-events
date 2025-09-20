@@ -4,12 +4,14 @@ import (
 	"arch/internal/domain/ai"
 	"arch/internal/domain/entity"
 	"encoding/json"
+	"time"
 )
 
 func (a *Application) SendAi(input entity.UserSend) ([]entity.ChatOutput, error) {
 	q := ai.New(*a.qwqConfig)
 
 	if input.Istest == true {
+		time.Sleep(3 * time.Second)
 		return ExampleChatOutputs, nil
 	}
 	params, err := q.Send(input.Message)

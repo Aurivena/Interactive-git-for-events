@@ -39,7 +39,7 @@ func New(cfg entity.AiConfig) *Ai {
 	return &Ai{
 		ai: cfg,
 		client: &http.Client{
-			Timeout:   5 * time.Second,
+			Timeout:   30 * time.Second,
 			Transport: tr,
 		},
 	}
