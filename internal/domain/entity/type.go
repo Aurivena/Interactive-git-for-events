@@ -1,5 +1,22 @@
 package entity
 
+import "github.com/google/uuid"
+
+type Kind string
+
+var validKind = map[Kind]struct{}{
+	"cinema": {}, "theatre": {}, "concert_hall": {}, "stadium": {}, "sport": {},
+	"museum": {}, "art_gallery": {}, "historic": {}, "memorial": {}, "park": {},
+	"zoo": {}, "aquapark": {}, "attraction": {}, "church": {}, "monastery": {},
+	"mosque": {}, "synagogue": {}, "mall": {}, "market": {}, "monument": {},
+	"restaurant": {},
+}
+
+func (k Kind) Valid() bool {
+	_, ok := validKind[k]
+	return ok
+}
+
 type TimeOnly struct {
 	Hour   int
 	Minute int
@@ -35,4 +52,14 @@ func (w *Weekday) Valid() bool {
 
 func (w *Weekday) Convert() string {
 	return string(*w)
+}
+
+type UUID string
+
+func (u UUID) Valid() bool {
+	_, err := uuid.Parse(string(u))
+	if err != nil {
+		return false
+	}
+	return true
 }

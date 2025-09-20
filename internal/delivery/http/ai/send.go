@@ -2,9 +2,7 @@ package ai
 
 import (
 	"arch/internal/domain/entity"
-	"context"
 	"net/http"
-	"time"
 
 	"github.com/Aurivena/spond/v2/envelope"
 	"github.com/gin-gonic/gin"
@@ -36,10 +34,7 @@ func (h *Handler) Send(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 100*time.Second)
-	defer cancel()
-
-	output, err := h.application.SendAi(ctx, input)
+	output, err := h.application.SendAi(input)
 	if err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
 			Code: http.StatusInternalServerError,

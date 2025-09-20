@@ -45,7 +45,7 @@ func New(cfg entity.AiConfig) *Ai {
 	}
 }
 
-func (q *Ai) Send(ctx context.Context, message string) ([]entity.RequestPayload, error) {
+func (q *Ai) Send(message string) ([]entity.RequestPayload, error) {
 	if q.client == nil {
 		q.client = &http.Client{Timeout: defaultTimeout}
 	}

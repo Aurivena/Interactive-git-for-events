@@ -3,6 +3,7 @@ package http
 import (
 	"arch/internal/application"
 	"arch/internal/delivery/http/ai"
+	"arch/internal/delivery/http/place"
 	"arch/internal/delivery/middleware"
 	"arch/internal/domain/entity"
 	"arch/internal/server"
@@ -16,12 +17,14 @@ import (
 
 type Http struct {
 	Ai         *ai.Handler
+	Place      *place.Handler
 	Middleware *middleware.Middleware
 }
 
 func NewHttp(application *application.Application, spond *core.Spond, middleware *middleware.Middleware) *Http {
 	return &Http{
 		Ai:         ai.New(application, spond),
+		Place:      place.New(application, spond),
 		Middleware: middleware,
 	}
 }
@@ -42,9 +45,16 @@ func (h *Http) InitHTTPHttps(config *entity.ServerConfig) *gin.Engine {
 	api := gHttp.Group("/api")
 	{
 
-		group := api.Group("/ai")
+		aiRouter := api.Group("/ai")
 		{
-			group.POST("/send", h.Ai.Send)
+			aiRouter.POST("/send", h.Ai.Send)
+		}
+
+		placeRouter := api.Group("/place")
+		{
+			placeRouter.GET("/list", h.Place.List)
+			placeRouter.GET("/list/:kind", h.Place.ListByKind)
+			placeRouter.GET("/:id", h.Place.ByID)
 		}
 
 	}
