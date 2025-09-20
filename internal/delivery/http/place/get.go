@@ -15,7 +15,7 @@ import (
 // @Summary     Получить список мест
 // @Description Возвращает полный список мест.
 // @Produce     json
-// @Success     200 {array}  entity.PlaceInfo         "Список мест"
+// @Success     200 {array}  entity.PlaceInfoDoc         "Список мест"
 // @Failure     500 {object} entity.AppError      "Внутренняя ошибка сервера (Spond error)"
 // @Router      /places [get]
 func (h *Handler) List(c *gin.Context) {
@@ -42,7 +42,7 @@ func (h *Handler) List(c *gin.Context) {
 // @Description Возвращает место по идентификатору.
 // @Produce     json
 // @Param       id   path   string true "ID места (UUID, формат: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)"
-// @Success     200  {object} entity.PlaceInfo        "Место найдено"
+// @Success     200  {object} entity.PlaceInfoDoc        "Место найдено"
 // @Failure     400  {object} entity.AppError     "Некорректный формат ID (Spond error)"
 // @Failure     404  {object} entity.AppError     "Место не найдено (Spond error)"
 // @Failure     500  {object} entity.AppError     "Внутренняя ошибка сервера (Spond error)"
@@ -98,7 +98,7 @@ func (h *Handler) ByID(c *gin.Context) {
 // @Description Возвращает список мест, отфильтрованный по типу.
 // @Produce     json
 // @Param       kind path string true "Тип места (enum)" Enums(cinema,theatre,concert_hall,stadium,sport,museum,art_gallery,historic,memorial,park,zoo,aquapark,attraction,church,monastery,mosque,synagogue,mall,market,monument,restaurant)
-// @Success     200  {array}  entity.PlaceInfo        "Список мест по типу"
+// @Success     200  {array}  entity.PlaceInfoDoc        "Список мест по типу"
 // @Failure     400  {object} entity.AppError     "Некорректное значение kind (Spond error)"
 // @Failure     500  {object} entity.AppError     "Внутренняя ошибка сервера (Spond error)"
 // @Router      /places/kind/{kind} [get]

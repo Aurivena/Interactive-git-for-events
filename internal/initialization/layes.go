@@ -17,8 +17,8 @@ func InitLayers() (delivery *http.Http, businessDatabase *sqlx.DB) {
 		BusinessDB: businessDatabase,
 	}
 	infrastructures := infrastructure.New(&sources)
-
-	app := application.New(infrastructures, &ConfigService.QwQ)
+	client := newVpnClient()
+	app := application.New(infrastructures, &ConfigService.QwQ, client)
 	middleware := middleware.New()
 	delivery = http.NewHttp(app, spond, middleware)
 	return delivery, businessDatabase

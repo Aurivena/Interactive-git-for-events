@@ -6,7 +6,7 @@ import (
 )
 
 func (a *Application) SendAi(input entity.UserSend) ([]entity.ChatOutput, error) {
-	q := ai.New(*a.qwqConfig)
+	q := ai.New(*a.qwqConfig, a.proxyClient)
 	params, err := q.Send(input.Message)
 	if err != nil {
 		return nil, err
