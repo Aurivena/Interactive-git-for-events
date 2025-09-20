@@ -50,11 +50,11 @@ func (h *Http) InitHTTPHttps(config *entity.ServerConfig) *gin.Engine {
 			aiRouter.POST("/send", h.Ai.Send)
 		}
 
-		placeRouter := api.Group("/place")
+		places := api.Group("/places")
 		{
-			placeRouter.GET("/list", h.Place.List)
-			placeRouter.GET("/list/:kind", h.Place.ListByKind)
-			placeRouter.GET("/:id", h.Place.ByID)
+			places.GET("", h.Place.List)
+			places.GET("/kind/:kind", h.Place.ListByKind)
+			places.GET("/:id", h.Place.ByID)
 		}
 
 	}

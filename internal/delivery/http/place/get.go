@@ -17,7 +17,7 @@ import (
 // @Produce     json
 // @Success     200 {array}  []entity.PlaceInfo         "Список мест"
 // @Failure     500 {object} entity.AppError      "Внутренняя ошибка сервера (Spond error)"
-// @Router      /place/list [get]
+// @Router      /places [get]
 func (h *Handler) List(c *gin.Context) {
 	output, err := h.application.List()
 	if err != nil {
@@ -46,7 +46,7 @@ func (h *Handler) List(c *gin.Context) {
 // @Failure     400  {object} entity.AppError     "Некорректный формат ID (Spond error)"
 // @Failure     404  {object} entity.AppError     "Место не найдено (Spond error)"
 // @Failure     500  {object} entity.AppError     "Внутренняя ошибка сервера (Spond error)"
-// @Router      /place/{id} [get]
+// @Router      /places/{id} [get]
 func (h *Handler) ByID(c *gin.Context) {
 	id := entity.UUID(c.Param("id"))
 	if ok := id.Valid(); !ok {
@@ -101,7 +101,7 @@ func (h *Handler) ByID(c *gin.Context) {
 // @Success     200  {array}  []entity.PlaceInfo        "Список мест по типу"
 // @Failure     400  {object} entity.AppError     "Некорректное значение kind (Spond error)"
 // @Failure     500  {object} entity.AppError     "Внутренняя ошибка сервера (Spond error)"
-// @Router      /place/list/{kind} [get]
+// @Router      /places/kind/{kind} [get]
 func (h *Handler) ListByKind(c *gin.Context) {
 	kind := entity.Kind(c.Param("kind"))
 	if ok := kind.Valid(); !ok {
