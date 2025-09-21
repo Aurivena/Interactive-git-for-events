@@ -3,7 +3,6 @@ package ai
 import (
 	"arch/internal/delivery/middleware"
 	"arch/internal/domain/entity"
-	"net/http"
 
 	"github.com/Aurivena/spond/v2/envelope"
 	"github.com/gin-gonic/gin"
@@ -24,7 +23,7 @@ func (h *Handler) Send(c *gin.Context) {
 	var input entity.UserSend
 	if err := c.ShouldBindJSON(&input); err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusBadRequest,
+			Code: envelope.BadRequest,
 			Detail: envelope.ErrorDetail{
 				Title:   "Ошибка при запросе",
 				Message: "Не удалось обработать ваш запрос",
@@ -37,7 +36,7 @@ func (h *Handler) Send(c *gin.Context) {
 	output, err := h.application.SendAi(input, c.GetHeader(middleware.Session))
 	if err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusInternalServerError,
+			Code: envelope.InternalServerError,
 			Detail: envelope.ErrorDetail{
 				Title:    "Ошибка сервера",
 				Message:  "Мы 100% устраняем эту ошибку!",

@@ -22,7 +22,7 @@ func (h *Handler) List(c *gin.Context) {
 	output, err := h.application.List()
 	if err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusInternalServerError,
+			Code: envelope.InternalServerError,
 			Detail: envelope.ErrorDetail{
 				Title:   "Не удалось получить список мест",
 				Message: "Сервис мест вернул ошибку: " + err.Error(),
@@ -66,7 +66,7 @@ func (h *Handler) ByID(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			h.spond.SendResponseError(c.Writer, &envelope.AppError{
-				Code: http.StatusNotFound,
+				Code: envelope.NotFound,
 				Detail: envelope.ErrorDetail{
 					Title:   "Место не найдено",
 					Message: "Место с указанным ID отсутствует",
@@ -78,7 +78,7 @@ func (h *Handler) ByID(c *gin.Context) {
 		}
 
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusInternalServerError,
+			Code: envelope.InternalServerError,
 			Detail: envelope.ErrorDetail{
 				Title:   "Ошибка при получении места",
 				Message: "Внутренняя ошибка сервера: " + err.Error(),
@@ -106,7 +106,7 @@ func (h *Handler) ListByKind(c *gin.Context) {
 	kind := entity.Kind(c.Param("kind"))
 	if ok := kind.Valid(); !ok {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusBadRequest,
+			Code: envelope.BadRequest,
 			Detail: envelope.ErrorDetail{
 				Title:   "Некорректное значение kind",
 				Message: "Передан тип, отсутствующий в справочнике",
@@ -120,7 +120,7 @@ func (h *Handler) ListByKind(c *gin.Context) {
 	output, err := h.application.ListByKind(kind)
 	if err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusInternalServerError,
+			Code: envelope.InternalServerError,
 			Detail: envelope.ErrorDetail{
 				Title:   "Ошибка при получении списка по типу",
 				Message: "Внутренняя ошибка сервера: " + err.Error(),

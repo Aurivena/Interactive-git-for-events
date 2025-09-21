@@ -4,7 +4,6 @@ import (
 	"arch/internal/delivery/middleware"
 	"arch/internal/domain/entity"
 	"arch/internal/domain/parse"
-	"net/http"
 
 	"github.com/Aurivena/spond/v2/envelope"
 	"github.com/gin-gonic/gin"
@@ -28,7 +27,7 @@ func (h *Handler) ListHistory(c *gin.Context) {
 	var query entity.Query
 	if err := parse.Parse(&query, c); err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusBadRequest,
+			Code: envelope.BadRequest,
 			Detail: envelope.ErrorDetail{
 				Title:    "Параметры запроса некорректны",
 				Message:  "Не удалось разобрать query params (page, limit).",
@@ -41,7 +40,7 @@ func (h *Handler) ListHistory(c *gin.Context) {
 	output, err := h.application.ListHistory(&query, c.GetHeader(middleware.Session))
 	if err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusInternalServerError,
+			Code: envelope.InternalServerError,
 			Detail: envelope.ErrorDetail{
 				Title:    "Не удалось получить историю",
 				Message:  "Произошла ошибка при обращении к хранилищу истории.",
