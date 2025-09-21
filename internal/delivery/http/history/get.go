@@ -1,6 +1,7 @@
 package history
 
 import (
+	"arch/internal/delivery/middleware"
 	"arch/internal/domain/entity"
 	"arch/internal/domain/parse"
 	"net/http"
@@ -24,19 +25,6 @@ import (
 // @Failure      500  {object}  entity.AppErrorDoc        "Внутренняя ошибка сервера"
 // @Router       /history [get]
 func (h *Handler) ListHistory(c *gin.Context) {
-	sessionID := c.GetHeader("X-Session-ID")
-	if sessionID == "" {
-		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusBadRequest,
-			Detail: envelope.ErrorDetail{
-				Title:    "Не указан идентификатор сессии",
-				Message:  "Заголовок X-Session-ID обязателен для получения истории.",
-				Solution: "Добавьте X-Session-ID в заголовок запроса и повторите попытку.",
-			},
-		})
-		return
-	}
-
 	var query entity.Query
 	if err := parse.Parse(&query, c); err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
@@ -50,7 +38,7 @@ func (h *Handler) ListHistory(c *gin.Context) {
 		return
 	}
 
-	output, err := h.application.ListHistory(&query, sessionID)
+	output, err := h.application.ListHistory(&query, c.GetHeader(middleware.Session))
 	if err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
 			Code: http.StatusInternalServerError,

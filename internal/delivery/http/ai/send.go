@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"arch/internal/delivery/middleware"
 	"arch/internal/domain/entity"
 	"net/http"
 
@@ -33,19 +34,7 @@ func (h *Handler) Send(c *gin.Context) {
 		})
 		return
 	}
-	sessionID := c.GetHeader("X-Session-ID")
-	if sessionID == "" {
-		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusBadRequest,
-			Detail: envelope.ErrorDetail{
-				Title:    "Не указан идентификатор сессии",
-				Message:  "Заголовок X-Session-ID обязателен для получения истории.",
-				Solution: "Добавьте X-Session-ID в заголовок запроса и повторите попытку.",
-			},
-		})
-		return
-	}
-	output, err := h.application.SendAi(input, sessionID)
+	output, err := h.application.SendAi(input, c.GetHeader(middleware.Session))
 	if err != nil {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
 			Code: http.StatusInternalServerError,
