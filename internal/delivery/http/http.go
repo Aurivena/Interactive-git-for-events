@@ -51,6 +51,7 @@ func (h *Http) InitHTTPHttps(config *entity.ServerConfig) *gin.Engine {
 		aiRouter := api.Group("/ai", h.Middleware.Session)
 		{
 			aiRouter.POST("/send", h.Ai.Send)
+			aiRouter.GET("/history", h.History.ListHistory)
 		}
 
 		places := api.Group("/places")
@@ -58,11 +59,6 @@ func (h *Http) InitHTTPHttps(config *entity.ServerConfig) *gin.Engine {
 			places.GET("", h.Place.List)
 			places.GET("/kind/:kind", h.Place.ListByKind)
 			places.GET("/:id", h.Place.ByID)
-		}
-
-		histories := api.Group("/history", h.Middleware.Session)
-		{
-			histories.GET("", h.History.ListHistory)
 		}
 
 	}

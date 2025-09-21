@@ -23,7 +23,7 @@ import (
 // @Failure      400  {object}  entity.AppErrorDoc        "Ошибочные параметры/заголовки"
 // @Failure      404  {object}  entity.AppErrorDoc        "Не найдено"
 // @Failure      500  {object}  entity.AppErrorDoc        "Внутренняя ошибка сервера"
-// @Router       /history [get]
+// @Router       /ai/history [get]
 func (h *Handler) ListHistory(c *gin.Context) {
 	var query entity.Query
 	if err := parse.Parse(&query, c); err != nil {
