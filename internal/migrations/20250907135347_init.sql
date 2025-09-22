@@ -24,6 +24,12 @@ CREATE TABLE IF NOT EXISTS place (
     tags jsonb
 );
 
+CREATE TABLE IF NOT EXISTS place_image(
+    place_id uuid,
+    image_id uuid,
+    PRIMARY KEY (place_id,image_id)
+);
+
 CREATE TABLE IF NOT EXISTS place_schedule (
     place_id uuid NOT NULL,
     start_work time,

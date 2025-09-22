@@ -8,11 +8,11 @@ import (
 )
 
 func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.ChatOutput, error) {
-	q := ai.New(*a.qwqConfig)
+	q := ai.New(*a.aiConfig)
 
 	if input.Istest == true {
 		time.Sleep(1 * time.Second)
-		if err := a.post.History.Save(ExampleChatOutputs, input.Message, sessionID); err != nil {
+		if err := a.post.HistoryWriter.Write(ExampleChatOutputs, input.Message, sessionID); err != nil {
 			return nil, err
 		}
 		return ExampleChatOutputs, nil
@@ -28,7 +28,7 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 		if params[i].Count == 0 {
 			params[i].Count = ai.DefaultCount
 		}
-		out, err := a.post.PlaceGet.Get(&params[i], input.Lon, input.Lat)
+		out, err := a.post.PlaceReader.Get(&params[i], input.Lon, input.Lat)
 		if err != nil {
 			return nil, err
 		}
@@ -38,7 +38,7 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 			output[i].Message = params[i].Message
 		}
 	}
-	if err = a.post.History.Save(output, input.Message, sessionID); err != nil {
+	if err = a.post.HistoryWriter.Write(output, input.Message, sessionID); err != nil {
 		return nil, err
 	}
 

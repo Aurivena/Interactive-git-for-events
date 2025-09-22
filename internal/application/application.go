@@ -6,13 +6,13 @@ import (
 )
 
 type Application struct {
-	qwqConfig *entity.AiConfig
-	post      *infrastructure.Infrastructure
+	aiConfig *entity.AiConfig
+	post     *infrastructure.Infrastructure
 }
 
-func New(post *infrastructure.Infrastructure, qwqConfig *entity.AiConfig) *Application {
+func New(post *infrastructure.Infrastructure, aiConfig *entity.AiConfig) *Application {
 	return &Application{
-		qwqConfig: qwqConfig,
-		post:      post,
+		aiConfig: aiConfig,
+		post:     post,
 	}
 }

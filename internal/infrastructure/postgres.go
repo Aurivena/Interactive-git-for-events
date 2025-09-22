@@ -32,7 +32,7 @@ func NewPostgresDB(config *DBConfig) (*sqlx.DB, error) {
 		logrus.Errorf("Failed to connect to postgres database: %v", err)
 		return nil, err
 	}
-
+	
 	if err = goose.SetDialect(dbDriverName); err != nil {
 		logrus.Errorf("Failed to set goose dialect: %v", err)
 		return nil, fmt.Errorf("failed to set goose dialect: %w", err)
