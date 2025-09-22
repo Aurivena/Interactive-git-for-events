@@ -46,7 +46,7 @@ type ChatOutputDoc struct {
 }
 
 type HistoryDoc struct {
-	ID        string        `json:"id" db:"id"`
-	Message   string        `json:"message" db:"message"`
-	AiMessage ChatOutputDoc `json:"ai_message" db:"ai_message"`
+	ID        string          `json:"id" db:"id"`
+	Message   string          `json:"message" db:"message"`
+	AiMessage []ChatOutputDoc `json:"ai_message" db:"ai_message"`
 }

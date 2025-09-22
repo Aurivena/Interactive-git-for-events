@@ -7,9 +7,9 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TYPE  week_enum as enum('monday','tuesday','wednesday','thursday','friday','saturday','sunday');
 CREATE TYPE tier_enum as enum('economy','value','standard','premium','upscale');
 CREATE TYPE kind_enum  AS ENUM (
-    'cinema','theatre','concert_hall','stadium','sport','museum','art_gallery',
-    'historic','memorial','park','zoo','aquapark','attraction',
-    'church','monastery','mosque','synagogue','mall','market','monument','restaurant'
+    'cinema','theatre','concert_hall','stadium','sport','museum',
+    'historic','memorial','park','attraction',
+    'monument','restaurant'
     );
 
 CREATE TABLE IF NOT EXISTS place (
