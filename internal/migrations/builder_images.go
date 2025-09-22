@@ -64,11 +64,11 @@ func (m *Migrations) DownloadImages() error {
 			if firstErr == nil {
 				firstErr = err
 			}
-			continue // не валим весь процесс из-за одного архива
+			continue
 		}
 
 		objs, err := reader(zr.File)
-		_ = zr.Close() // закрываем сразу, не накапливаем дескрипторы
+		_ = zr.Close()
 		if err != nil {
 			logrus.WithError(err).WithField("zip", zipPath).Error("read zip entries")
 			if firstErr == nil {
@@ -77,7 +77,7 @@ func (m *Migrations) DownloadImages() error {
 			continue
 		}
 
-		if err := m.execute(objs); err != nil {
+		if err = m.execute(objs); err != nil {
 			logrus.WithError(err).WithField("zip", zipPath).Error("execute")
 			if firstErr == nil {
 				firstErr = err
@@ -90,6 +90,7 @@ func (m *Migrations) DownloadImages() error {
 }
 
 func (m *Migrations) execute(objs []objectInfo) error {
+	ctx := context.Background()
 	for _, obj := range objs {
 		txtUUid, err := uuid.NewV7()
 		if err != nil {
@@ -102,7 +103,6 @@ func (m *Migrations) execute(objs []objectInfo) error {
 			return err
 		}
 
-		ctx := context.Background()
 		for _, image := range obj.Images {
 			err = m.minioWriter.Write(ctx, image.Data, image.Name)
 			if errors.Is(err, domain.FileDuplicate) {
@@ -124,29 +124,11 @@ func (m *Migrations) execute(objs []objectInfo) error {
 func reader(files []*zip.File) ([]objectInfo, error) {
 	byDir := make(map[string]*objectInfo)
 
-	get := func(dir string) *objectInfo {
-		if o := byDir[dir]; o != nil {
-			return o
-		}
-		o := &objectInfo{Dir: dir}
-		byDir[dir] = o
-		return o
-	}
-
-	isImageExt := func(ext string) bool {
-		switch ext {
-		case ".jpg", ".jpeg", ".png":
-			return true
-		default:
-			return false
-		}
-	}
-
 	for _, zf := range files {
 		if zf.FileInfo().IsDir() {
 			continue
 		}
-		dir := path.Dir(zf.Name) // ZIP-пути — через '/'
+		dir := path.Dir(zf.Name)
 		base := path.Base(zf.Name)
 		ext := strings.ToLower(path.Ext(base))
 
@@ -162,15 +144,15 @@ func reader(files []*zip.File) ([]objectInfo, error) {
 			if err != nil {
 				return nil, fmt.Errorf("read txt %q: %w", zf.Name, err)
 			}
-			get(dir).TxtSQL = string(b)
+			get(byDir, dir).TxtSQL = string(b)
 
 		default:
 			if isImageExt(ext) {
-				if err := appendFile(r, get, base, ext, dir); err != nil {
+				if err = appendFile(r, byDir, base, ext, dir); err != nil {
 					return nil, fmt.Errorf("append image %q: %w", zf.Name, err)
 				}
 			} else {
-				_ = r.Close() // неинтересное — закрыли
+				_ = r.Close()
 			}
 		}
 	}
@@ -182,13 +164,31 @@ func reader(files []*zip.File) ([]objectInfo, error) {
 	return out, nil
 }
 
-func appendFile(r io.ReadCloser, get func(dir string) *objectInfo, base, ext, dir string) error {
+func get(byDir map[string]*objectInfo, dir string) *objectInfo {
+	if o := byDir[dir]; o != nil {
+		return o
+	}
+	o := &objectInfo{Dir: dir}
+	byDir[dir] = o
+	return o
+}
+
+func isImageExt(ext string) bool {
+	switch ext {
+	case ".jpg", ".jpeg", ".png":
+		return true
+	default:
+		return false
+	}
+}
+
+func appendFile(r io.ReadCloser, byDir map[string]*objectInfo, base, ext, dir string) error {
 	b, err := io.ReadAll(r)
 	_ = r.Close()
 	if err != nil {
 		return err
 	}
-	oi := get(dir)
+	oi := get(byDir, dir)
 	name := strings.TrimSuffix(base, ext)
 	oi.Images = append(oi.Images, imageBlob{Name: name, Data: b})
 	return nil
