@@ -32,32 +32,50 @@ func BuildSql(params *entity.RequestPayload, base string, centerLon, centerLat *
 		clauses = append(clauses, fmt.Sprintf("p.tier = %s::tier_enum", addArg(params.Tier)))
 	}
 
+	needSchedule := false
+	schedConds := make([]string, 0, 3)
+
 	if len(params.DayOfTheWeek) > 0 {
 		weeks := make([]string, 0, len(params.DayOfTheWeek))
 		for _, w := range params.DayOfTheWeek {
 			if w.Valid() {
-				weeks = append(weeks, w.Convert())
+				weeks = append(weeks, w.Convert()) // "monday" и т.п.
 			}
 		}
-		clauses = append(clauses, fmt.Sprintf("ps.week = ANY(%s::week_enum[])", addArg(pq.Array(weeks))))
+		if len(weeks) > 0 {
+			needSchedule = true
+			schedConds = append(schedConds, fmt.Sprintf("(s.week = ANY(%s::text[]))", addArg(pq.Array(weeks))))
+		}
 	}
 
-	// time ("открыто в этот момент")
+	// "открыто в момент t"
 	if params.Time != nil && params.Time.Valid() {
+		needSchedule = true
 		t := fmt.Sprintf("%02d:%02d", params.Time.Hour, params.Time.Minute)
-		ti := addArg(t) // используем один и тот же placeholder 3 раза — норм для PG
+		ti := addArg(t)
 
-		clauses = append(clauses, fmt.Sprintf(`
+		// spans_midnight как boolean (COALESCE на случай отсутствия поля)
+		schedConds = append(schedConds, fmt.Sprintf(`
 (
-  ps.start_work IS NOT NULL AND ps.end_work IS NOT NULL
-  AND (
-       (ps.spans_midnight = FALSE AND %s::time BETWEEN ps.start_work AND ps.end_work)
-    OR (ps.spans_midnight = TRUE  AND (%s::time >= ps.start_work OR %s::time < ps.end_work))
-  )
+  (COALESCE(s.spans_midnight, false) = false AND %s::time BETWEEN (s.start)::time AND (s."end")::time)
+  OR
+  (COALESCE(s.spans_midnight, false) = true  AND (%s::time >= (s.start)::time OR %s::time < (s."end")::time))
 )`, ti, ti, ti))
 	}
 
-	// radius (PostGIS). Если нет geom — выпили или сделай bbox.
+	if needSchedule {
+		// Берём массив schedule из p.tags и разворачиваем в строки s(...)
+		clauses = append(clauses, fmt.Sprintf(`
+EXISTS (
+  SELECT 1
+  FROM jsonb_to_recordset(p.tags->'schedule')
+       AS s(week text, start text, "end" text, spans_midnight boolean)
+  WHERE %s
+)`, strings.Join(schedConds, " AND ")))
+	}
+	// --- КОНЕЦ ЗАМЕНЫ ---
+
+	// Радиус — без изменений
 	if params.Radius > 0 && centerLon != nil && centerLat != nil {
 		clauses = append(clauses,
 			fmt.Sprintf(`ST_DWithin(p.geom, ST_MakePoint(%s,%s)::geography, %s)`,

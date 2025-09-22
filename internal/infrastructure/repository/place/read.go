@@ -14,7 +14,6 @@ func (r *Place) Get(params *entity.RequestPayload, centerLon, centerLat *float64
 	base := `
 		SELECT DISTINCT ON (p.id) id, title,kind,address,description,lon,lat,tags
 		FROM place p
-		LEFT JOIN place_schedule ps ON ps.place_id = p.id
 		WHERE 1=1
 	`
 
