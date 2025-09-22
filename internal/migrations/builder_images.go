@@ -4,6 +4,7 @@ import (
 	"arch/internal/domain"
 	"arch/internal/ports"
 	"archive/zip"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -128,6 +129,11 @@ func reader(files []*zip.File) ([]objectInfo, error) {
 		if zf.FileInfo().IsDir() {
 			continue
 		}
+
+		if strings.HasPrefix(zf.Name, "__MACOSX/") || strings.HasPrefix(path.Base(zf.Name), "._") {
+			continue
+		}
+
 		dir := path.Dir(zf.Name)
 		base := path.Base(zf.Name)
 		ext := strings.ToLower(path.Ext(base))
@@ -144,6 +150,12 @@ func reader(files []*zip.File) ([]objectInfo, error) {
 			if err != nil {
 				return nil, fmt.Errorf("read txt %q: %w", zf.Name, err)
 			}
+
+			if bytes.IndexByte(b, 0x00) >= 0 {
+				logrus.WithField("file", zf.Name).Warn("skip binary txt (contains NUL)")
+				continue
+			}
+
 			get(byDir, dir).TxtSQL = string(b)
 
 		default:

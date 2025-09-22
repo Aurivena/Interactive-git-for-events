@@ -1,3 +1,5 @@
 .idea
 configs/config.json
 docs
+__MACOSX
+.DS_Store
