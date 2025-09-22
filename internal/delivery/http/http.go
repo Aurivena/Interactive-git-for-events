@@ -59,6 +59,7 @@ func (h *Http) InitHTTPHttps(config *entity.ServerConfig) *gin.Engine {
 			places.GET("", h.Place.List)
 			places.GET("/kind/:kind", h.Place.ListByKind)
 			places.GET("/:id", h.Place.ByID)
+			places.GET("/image/:id", h.Place.ImageByID)
 		}
 
 	}

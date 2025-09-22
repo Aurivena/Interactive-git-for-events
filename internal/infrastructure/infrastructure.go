@@ -18,7 +18,9 @@ type Infrastructure struct {
 
 	HistoryWriter ports.HistoryWriter
 	HistoryReader ports.HistoryReader
-	MinioWriter   ports.MinioWrite
+
+	MinioWriter ports.MinioWrite
+	MinioReader ports.MinioReader
 }
 
 type Sources struct {
@@ -33,6 +35,8 @@ func New(sources *Sources, client *minio.Client, cfg entity.MinioConfig) *Infras
 
 		HistoryWriter: history.NewHistory(sources.BusinessDB),
 		HistoryReader: history.NewHistory(sources.BusinessDB),
-		MinioWriter:   s3.New(client, cfg),
+
+		MinioWriter: s3.New(client, cfg),
+		MinioReader: s3.New(client, cfg),
 	}
 }

@@ -45,3 +45,12 @@ func (a *Application) ByID(id entity.UUID) (*entity.PlaceInfo, error) {
 	output.Images = images
 	return output, nil
 }
+
+func (a *Application) ImageByID(id entity.UUID) ([]byte, string, error) {
+	data, contentType, err := a.post.MinioReader.GetImage(id)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return data, contentType, nil
+}

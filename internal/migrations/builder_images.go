@@ -25,6 +25,17 @@ type Migrations struct {
 	minioWriter ports.MinioWrite
 }
 
+type imageBlob struct {
+	Name string
+	Data []byte
+}
+
+type objectInfo struct {
+	Dir    string
+	TxtSQL string
+	Images []imageBlob
+}
+
 func New(writer ports.PlaceWriter, binding ports.PlaceBinding, minioWriter ports.MinioWrite) *Migrations {
 	return &Migrations{
 		writer:      writer,
@@ -98,27 +109,16 @@ func (m *Migrations) execute(objs []objectInfo) error {
 				continue
 			}
 			if err != nil {
-				logrus.Error("Error at creating UUID")
+				logrus.Error("Error at write file")
 				return err
 			}
 			if err = m.binding.Bind(txtUUid, image.Name); err != nil {
-				logrus.Error("Error at creating UUID")
+				logrus.Error("Error at bind file")
 				return err
 			}
 		}
 	}
 	return nil
-}
-
-type ImageBlob struct {
-	Name string
-	Data []byte
-}
-
-type objectInfo struct {
-	Dir    string      // "папка" в архиве (префикс)
-	TxtSQL string      // содержимое .txt (SQL)
-	Images []ImageBlob // []byte картинок
 }
 
 func reader(files []*zip.File) ([]objectInfo, error) {
@@ -190,6 +190,6 @@ func appendFile(r io.ReadCloser, get func(dir string) *objectInfo, base, ext, di
 	}
 	oi := get(dir)
 	name := strings.TrimSuffix(base, ext)
-	oi.Images = append(oi.Images, ImageBlob{Name: name, Data: b})
+	oi.Images = append(oi.Images, imageBlob{Name: name, Data: b})
 	return nil
 }

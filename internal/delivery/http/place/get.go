@@ -51,7 +51,7 @@ func (h *Handler) ByID(c *gin.Context) {
 	id := entity.UUID(c.Param("id"))
 	if ok := id.Valid(); !ok {
 		h.spond.SendResponseError(c.Writer, &envelope.AppError{
-			Code: http.StatusBadRequest,
+			Code: envelope.BadRequest,
 			Detail: envelope.ErrorDetail{
 				Title:   "Некорректный идентификатор",
 				Message: "ID должен быть в формате UUID (RFC 4122)",
@@ -132,4 +132,47 @@ func (h *Handler) ListByKind(c *gin.Context) {
 	}
 
 	h.spond.SendResponseSuccess(c.Writer, envelope.Success, output)
+}
+
+// ImageByID
+// @Tags        Places
+// @Summary     Получить изображение по ID
+// @Description Возвращает файл изображения (например, JPEG/PNG), связанный с указанным UUID.
+// @Param       id   path      string  true  "UUID изображения (RFC 4122)"
+// @Produce     jpeg
+// @Produce     png
+// @Produce     octet-stream
+// @Success     200  {file}    binary  "Бинарные данные изображения"
+// @Failure     400  {object}  entity.AppErrorDoc "Некорректный UUID"
+// @Failure     404  {object}  entity.AppErrorDoc "Файл не найден"
+// @Router      /places/image/{id} [get]
+func (h *Handler) ImageByID(c *gin.Context) {
+	id := entity.UUID(c.Param("id"))
+	if ok := id.Valid(); !ok {
+		h.spond.SendResponseError(c.Writer, &envelope.AppError{
+			Code: envelope.BadRequest,
+			Detail: envelope.ErrorDetail{
+				Title:   "Некорректный идентификатор",
+				Message: "ID должен быть в формате UUID (RFC 4122)",
+				Solution: "Проверьте формат: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n" +
+					"Пример: 11111111-1111-1111-1111-111111111111",
+			},
+		})
+		return
+	}
+
+	data, contentType, err := h.application.ImageByID(id)
+	if err != nil {
+		h.spond.SendResponseError(c.Writer, &envelope.AppError{
+			Code: envelope.NotFound,
+			Detail: envelope.ErrorDetail{
+				Title:    "Файл не найден",
+				Message:  "Изображение с указанным ID отсутствует",
+				Solution: "Убедитесь, что файл загружен и ID корректный",
+			},
+		})
+		return
+	}
+
+	c.Data(http.StatusOK, contentType, data)
 }
