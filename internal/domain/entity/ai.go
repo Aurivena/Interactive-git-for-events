@@ -1,6 +1,8 @@
 package entity
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type UserSend struct {
 	Message string   `json:"message" example:"Хочу сходить в кино и ресторан"`
@@ -18,6 +20,7 @@ type PlaceInfo struct {
 	Lon         float64         `json:"lon" db:"lon"`
 	Lat         float64         `json:"lat" db:"lat"`
 	Tags        json.RawMessage `json:"tags" db:"tags" swaggertype:"object"`
+	Images      []UUID          `json:"images" db:"images"`
 }
 
 type RequestPayload struct {

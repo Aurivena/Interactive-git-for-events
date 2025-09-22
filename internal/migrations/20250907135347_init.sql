@@ -30,26 +30,6 @@ CREATE TABLE IF NOT EXISTS place_image(
     PRIMARY KEY (place_id,image_id)
 );
 
-CREATE TABLE IF NOT EXISTS place_schedule (
-    place_id uuid NOT NULL,
-    start_work time,
-    end_work time,
-    week week_enum NOT NULL,
-    spans_midnight boolean NOT NULL DEFAULT false
-
-        CONSTRAINT chk_times_null_pair CHECK (
-            (start_work IS NULL AND end_work IS NULL)
-                OR (start_work IS NOT NULL AND end_work IS NOT NULL)
-            ),
-    CONSTRAINT chk_times_order CHECK (
-        (start_work IS NULL AND end_work IS NULL AND spans_midnight = false)
-            OR (start_work IS NOT NULL AND end_work IS NOT NULL AND (
-            (spans_midnight = false AND start_work < end_work)
-                OR (spans_midnight = true)
-            ))
-        )
-);
-
 CREATE TABLE IF NOT EXISTS history (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     session varchar(255) NOT NULL ,
@@ -58,6 +38,11 @@ CREATE TABLE IF NOT EXISTS history (
     created_at timestamp DEFAULT NOW() NOT NULL
 );
 
+ALTER TABLE place_image
+    ADD CONSTRAINT fk_place_image_place
+        FOREIGN KEY (place_id) REFERENCES place(id) ON DELETE CASCADE;
+
+
 CREATE INDEX IF NOT EXISTS idx_tier_kind ON place(tier,kind);
 CREATE INDEX IF NOT EXISTS idx_place_trgm ON place USING gin((title || ' ' || address) gin_trgm_ops);
 
@@ -65,6 +50,15 @@ CREATE INDEX IF NOT EXISTS idx_place_trgm ON place USING gin((title || ' ' || ad
 
 -- +goose Down
 -- +goose StatementBegin
+DROP INDEX IF EXISTS idx_place_trgm;
+DROP INDEX IF EXISTS idx_tier_kind;
+DROP INDEX IF EXISTS idx_place_image_place;
+
+DROP TABLE IF EXISTS history;
+DROP TABLE IF EXISTS place_image;
 DROP TABLE IF EXISTS place;
-DROP TABLE IF EXISTS place_schedule;
+
+DROP TYPE IF EXISTS kind_enum;
+DROP TYPE IF EXISTS tier_enum;
+DROP TYPE IF EXISTS week_enum;
 -- +goose StatementEnd

@@ -7,6 +7,14 @@ func (a *Application) List() ([]entity.PlaceInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	for i := range output {
+		images, err := a.post.PlaceReader.ImagesByPlaceID(output[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		output[i].Images = images
+	}
 	return output, nil
 }
 
@@ -14,6 +22,13 @@ func (a *Application) ListByKind(kind entity.Kind) ([]entity.PlaceInfo, error) {
 	output, err := a.post.PlaceReader.ListByKind(kind)
 	if err != nil {
 		return nil, err
+	}
+	for i := range output {
+		images, err := a.post.PlaceReader.ImagesByPlaceID(output[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		output[i].Images = images
 	}
 	return output, nil
 }
@@ -23,5 +38,10 @@ func (a *Application) ByID(id entity.UUID) (*entity.PlaceInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	images, err := a.post.PlaceReader.ImagesByPlaceID(output.ID)
+	if err != nil {
+		return nil, err
+	}
+	output.Images = images
 	return output, nil
 }

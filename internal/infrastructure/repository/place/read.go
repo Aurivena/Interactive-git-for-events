@@ -60,3 +60,13 @@ func (r *Place) ListByKind(kind entity.Kind) ([]entity.PlaceInfo, error) {
 
 	return output, nil
 }
+
+func (r *Place) ImagesByPlaceID(id string) ([]entity.UUID, error) {
+	var output []entity.UUID
+
+	if err := r.db.Select(&output, `SELECT image_id FROM place_image WHERE place_id = $1`, id); err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+	return output, nil
+}

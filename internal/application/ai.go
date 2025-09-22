@@ -33,6 +33,14 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 			return nil, err
 		}
 
+		for i := range out {
+			images, err := a.post.PlaceReader.ImagesByPlaceID(out[i].ID)
+			if err != nil {
+				return nil, err
+			}
+			out[i].Images = images
+		}
+
 		if out != nil {
 			output[i].PlaceInfo = out
 			output[i].Message = params[i].Message

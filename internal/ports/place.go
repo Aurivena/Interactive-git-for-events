@@ -11,6 +11,7 @@ type PlaceReader interface {
 	ByID(id entity.UUID) (*entity.PlaceInfo, error)
 	ListByKind(kind entity.Kind) ([]entity.PlaceInfo, error)
 	List() ([]entity.PlaceInfo, error)
+	ImagesByPlaceID(id string) ([]entity.UUID, error)
 }
 
 type PlaceWriter interface {
