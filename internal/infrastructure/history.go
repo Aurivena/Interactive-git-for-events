@@ -15,7 +15,7 @@ func NewHistory(db *sqlx.DB) *History {
 	return &History{db: db}
 }
 
-func (r *History) Save(aiMessage entity.ChatOutput, message string, sessionID string) error {
+func (r *History) Save(aiMessage []entity.ChatOutput, message string, sessionID string) error {
 	_, err := r.db.Exec(`INSERT INTO  history (session,message,ai_message) VALUES ($1,$2,$3)`, sessionID, message, aiMessage)
 	if err != nil {
 		logrus.Error(err)
@@ -30,7 +30,7 @@ func (r *History) ListBySessionID(query *entity.Query, session string) ([]entity
 	offset := (query.Page - 1) * query.Limit
 
 	if err := r.db.Select(&output,
-		`SELECT DISTINCT ON (message) id, message, ai_message
+		`SELECT id, message, ai_message
 				FROM history
 				WHERE session = $1
 				ORDER BY message, created_at DESC

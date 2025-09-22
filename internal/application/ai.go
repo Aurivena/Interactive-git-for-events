@@ -12,10 +12,8 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 
 	if input.Istest == true {
 		time.Sleep(1 * time.Second)
-		for _, val := range ExampleChatOutputs {
-			if err := a.post.History.Save(val, input.Message, sessionID); err != nil {
-				return nil, err
-			}
+		if err := a.post.History.Save(ExampleChatOutputs, input.Message, sessionID); err != nil {
+			return nil, err
 		}
 		return ExampleChatOutputs, nil
 	}
@@ -39,10 +37,9 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 			output[i].PlaceInfo = out
 			output[i].Message = params[i].Message
 		}
-
-		if err = a.post.History.Save(output[i], input.Message, sessionID); err != nil {
-			return nil, err
-		}
+	}
+	if err = a.post.History.Save(output, input.Message, sessionID); err != nil {
+		return nil, err
 	}
 
 	return output, nil
