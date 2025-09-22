@@ -26,6 +26,13 @@ make swagger
     "db_name":"answer_postgres_database",
     "db_ssl_mode": "disable"
   },
+  "minio": {
+    "endpoint":"localhost:9000",
+    "minio_root_user":"answer-s3_minio-user",
+    "minio_root_password":"answer-s3_minio-password",
+    "minio_use_ssl": false,
+    "minio_bucket_name":"answer-s3_minio-bucket"
+  },
   "ai": {
     "model": "gemini-you",
     "api_key": "keeeey"
