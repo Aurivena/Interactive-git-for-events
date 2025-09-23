@@ -9,6 +9,14 @@ import (
 func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.ChatOutput, error) {
 	q := ai.New(*a.aiConfig)
 
+	if len(input.Message) == 0 {
+		return []entity.ChatOutput{
+			{
+				Message:   "Извините, но ваше сообщение пустое 👀!",
+				PlaceInfo: []entity.PlaceInfo{},
+			},
+		}, nil
+	}
 	if input.Istest == true {
 		time.Sleep(1 * time.Second)
 		examples, err := a.post.PlaceReader.ListByKind("cinema")
@@ -35,6 +43,7 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 	output := make([]entity.ChatOutput, len(params))
 
 	for i := range params {
+
 		if params[i].Count == 0 {
 			params[i].Count = ai.DefaultCount
 		}
