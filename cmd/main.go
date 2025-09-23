@@ -13,14 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func init() {
-	logrus.Info("start init server")
-	if err := initialization.LoadConfiguration(); err != nil {
-		logrus.Fatal(err.Error())
-	}
-	logrus.Info("end init server")
-}
-
 // @title           Arch
 // @version         1.0.0
 // @description     архитектура
@@ -37,9 +29,8 @@ func main() {
 
 func run(server server.Server, routes *http.Http, config *entity.ServerConfig) {
 	ginEngine := routes.InitHTTPHttps(config)
-	certificates := initialization.ConfigService.Certificates
 
-	if err := server.Run(config.Port, ginEngine, certificates); err != nil {
+	if err := server.Run(config.Port, ginEngine); err != nil {
 		if err.Error() != "http: Server closed" {
 			logrus.Fatalf("error occurred while running http server: %s", err.Error())
 		}

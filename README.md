@@ -1,41 +1,50 @@
 # INIT MVP PRODUCT
 
-#### Установка зависимостей
+## Установка зависимостей
 ```bash
     go install github.com/swaggo/swag/cmd/swag@latest
 ```
 
-#### Docs
+## Docs
+
+***- Для билда документации -***
 ```bash
 make swagger
 ```
 
-### configs/config.json
+
+***- Для перезапуска контейнера(можно и для первого запуска) -***
+```bash
+make restart
+```
+
+## configs/config.json
 ```json
 {
   "server": {
     "server_port": "1941",
     "server_mode": "development",
     "server_domain": "http://localhost:5173"
-  },
-  "business-database": {
-    "db_password":"answer_postgres_password",
-    "db_host": "localhost",
-    "db_port": "5433",
-    "db_username":"answer_postgres_user",
-    "db_name":"answer_postgres_database",
-    "db_ssl_mode": "disable"
-  },
-  "minio": {
-    "endpoint":"localhost:9000",
-    "minio_root_user":"answer-minio-user",
-    "minio_root_password":"answer-minio-password",
-    "minio_use_ssl": false,
-    "minio_bucket_name":"answer-minio-bucket"
-  },
-  "ai": {
-    "model": "gemini-you",
-    "api_key": "keeeey"
   }
 }
+```
+
+
+## .env
+```.env
+MINIO_ROOT_USER=answer-minio-user
+MINIO_ROOT_PASSWORD=answer-minio-password
+MINIO_USE_SSL=false
+MINIO_BUCKET_NAME=answer-minio-bucket
+MINIO_ENDPOINT=localhost:9000
+
+POSTGRES_USER=answer_postgres_user
+POSTGRES_PASSWORD=answer_postgres_password
+POSTGRES_DB=answer_postgres_database
+POSTGRES_PORT=5433
+POSTGRES_HOST=localhost
+POSTGRES_SSL_MODE=disable
+
+AI_MODEL=...
+AI_API_KEY=...
 ```

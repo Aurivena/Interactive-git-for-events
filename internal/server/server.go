@@ -1,7 +1,6 @@
 package server
 
 import (
-	"arch/internal/domain/entity"
 	"context"
 	"net/http"
 	"time"
@@ -16,7 +15,7 @@ type Server struct {
 
 const DEVELOPMENT = "development"
 
-func (s *Server) Run(port string, routes http.Handler, certificates entity.CertificatesConfig) error {
+func (s *Server) Run(port string, routes http.Handler) error {
 	s.httpServer = &http.Server{
 		Addr:           ":" + port,
 		Handler:        routes,

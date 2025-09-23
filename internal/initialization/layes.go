@@ -13,6 +13,20 @@ import (
 )
 
 func InitLayers() (delivery *http.Http, businessDatabase *sqlx.DB) {
+	logrus.Info("init config")
+	if err := loadConfig(); err != nil {
+		logrus.Fatal(err)
+		return nil, nil
+	}
+	logrus.Info("end init config")
+
+	logrus.Info("init env")
+	if err := loadEnvironment(); err != nil {
+		logrus.Fatal(err)
+		return nil, nil
+	}
+	logrus.Info("end init env")
+
 	spond := core.NewSpond()
 	businessDatabase = infrastructure.NewBusinessDatabase(ConfigService)
 	sources := infrastructure.Sources{
