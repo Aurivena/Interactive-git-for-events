@@ -99,7 +99,11 @@ func (m *Migrations) execute(objs []objectInfo) error {
 			return err
 		}
 
-		if err = m.writer.Write(txtUUid, obj.TxtSQL); err != nil {
+		err = m.writer.Write(txtUUid, obj.TxtSQL)
+		if errors.Is(err, domain.FileDuplicate) {
+			continue
+		}
+		if err != nil {
 			logrus.Error("Error at creating UUID")
 			return err
 		}
@@ -107,12 +111,14 @@ func (m *Migrations) execute(objs []objectInfo) error {
 		for _, image := range obj.Images {
 			err = m.minioWriter.Write(ctx, image.Data, image.Name)
 			if errors.Is(err, domain.FileDuplicate) {
+				logrus.Warn("File already exists")
 				continue
 			}
 			if err != nil {
 				logrus.Error("Error at write file")
 				return err
 			}
+
 			if err = m.binding.Bind(txtUUid, image.Name); err != nil {
 				logrus.Error("Error at bind file")
 				return err

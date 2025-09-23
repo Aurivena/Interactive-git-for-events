@@ -46,6 +46,9 @@ ALTER TABLE place_image
 CREATE INDEX IF NOT EXISTS idx_tier_kind ON place(tier,kind);
 CREATE INDEX IF NOT EXISTS idx_place_trgm ON place USING gin((title || ' ' || address) gin_trgm_ops);
 
+CREATE UNIQUE INDEX uniq_place_title_address
+    ON place (lower(title), lower(address));
+
 -- +goose StatementEnd
 
 -- +goose Down
