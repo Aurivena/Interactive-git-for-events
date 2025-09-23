@@ -23,8 +23,15 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 		if err != nil {
 			return nil, err
 		}
+		for i := range examples {
+			images, err := a.post.PlaceReader.ImagesByPlaceID(examples[i].ID)
+			if err != nil {
+				return nil, err
+			}
+			examples[i].Images = images
+		}
 		ot := []entity.ChatOutput{
-			entity.ChatOutput{
+			{
 				PlaceInfo: examples,
 				Message:   input.Message,
 			},
