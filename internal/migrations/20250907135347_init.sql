@@ -12,6 +12,11 @@ CREATE TYPE kind_enum  AS ENUM (
     'monument','restaurant'
     );
 
+CREATE TABLE client (
+    session_id varchar(255) NOT NULL PRIMARY KEY ,
+    survey jsonb NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS place (
     id       uuid  PRIMARY KEY,
     title    varchar(300) NOT NULL,
@@ -42,6 +47,10 @@ ALTER TABLE place_image
     ADD CONSTRAINT fk_place_image_place
         FOREIGN KEY (place_id) REFERENCES place(id) ON DELETE CASCADE;
 
+ALTER TABLE history
+    ADD CONSTRAINT fk_history_0
+    FOREIGN KEY (session) REFERENCES client(session_id) ON DELETE CASCADE;
+
 
 CREATE INDEX IF NOT EXISTS idx_tier_kind ON place(tier,kind);
 CREATE INDEX IF NOT EXISTS idx_place_trgm ON place USING gin((title || ' ' || address) gin_trgm_ops);
@@ -57,6 +66,7 @@ DROP INDEX IF EXISTS idx_place_trgm;
 DROP INDEX IF EXISTS idx_tier_kind;
 DROP INDEX IF EXISTS idx_place_image_place;
 
+DROP TABLE IF EXISTS client;
 DROP TABLE IF EXISTS history;
 DROP TABLE IF EXISTS place_image;
 DROP TABLE IF EXISTS place;

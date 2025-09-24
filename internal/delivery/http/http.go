@@ -3,6 +3,7 @@ package http
 import (
 	"arch/internal/application"
 	"arch/internal/delivery/http/ai"
+	"arch/internal/delivery/http/client"
 	"arch/internal/delivery/http/history"
 	"arch/internal/delivery/http/place"
 	"arch/internal/delivery/middleware"
@@ -20,6 +21,7 @@ type Http struct {
 	Ai         *ai.Handler
 	Place      *place.Handler
 	History    *history.Handler
+	Client     *client.Handler
 	Middleware *middleware.Middleware
 }
 
@@ -28,6 +30,7 @@ func NewHttp(application *application.Application, spond *core.Spond, middleware
 		Ai:         ai.New(application, spond),
 		Place:      place.New(application, spond),
 		History:    history.New(application, spond),
+		Client:     client.New(application, spond),
 		Middleware: middleware,
 	}
 }
@@ -52,6 +55,11 @@ func (h *Http) InitHTTPHttps(config *entity.ServerConfig) *gin.Engine {
 		{
 			aiRouter.POST("/send", h.Ai.Send)
 			aiRouter.GET("/history", h.History.ListHistory)
+		}
+
+		clientApp := api.Group("/client", h.Middleware.Session)
+		{
+			clientApp.POST("/upsert", h.Client.Upsert)
 		}
 
 		places := api.Group("/places")

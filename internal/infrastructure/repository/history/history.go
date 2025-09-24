@@ -8,6 +8,6 @@ type History struct {
 	db *sqlx.DB
 }
 
-func NewHistory(db *sqlx.DB) *History {
+func New(db *sqlx.DB) *History {
 	return &History{db: db}
 }

@@ -6,6 +6,6 @@ type Place struct {
 	db *sqlx.DB
 }
 
-func NewPlace(db *sqlx.DB) *Place {
+func New(db *sqlx.DB) *Place {
 	return &Place{db: db}
 }

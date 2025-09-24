@@ -7,6 +7,8 @@ import (
 	"arch/internal/infrastructure/s3"
 	"arch/internal/ports"
 
+	client_app "arch/internal/infrastructure/repository/client"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/minio/minio-go/v7"
 )
@@ -21,6 +23,8 @@ type Infrastructure struct {
 
 	MinioWriter ports.MinioWrite
 	MinioReader ports.MinioReader
+
+	ClientWriter ports.ClientWrite
 }
 
 type Sources struct {
@@ -29,14 +33,16 @@ type Sources struct {
 
 func New(sources *Sources, client *minio.Client, cfg entity.MinioConfig) *Infrastructure {
 	return &Infrastructure{
-		PlaceReader:  place.NewPlace(sources.BusinessDB),
-		PlaceWriter:  place.NewPlace(sources.BusinessDB),
-		PlaceBinding: place.NewPlace(sources.BusinessDB),
+		PlaceReader:  place.New(sources.BusinessDB),
+		PlaceWriter:  place.New(sources.BusinessDB),
+		PlaceBinding: place.New(sources.BusinessDB),
 
-		HistoryWriter: history.NewHistory(sources.BusinessDB),
-		HistoryReader: history.NewHistory(sources.BusinessDB),
+		HistoryWriter: history.New(sources.BusinessDB),
+		HistoryReader: history.New(sources.BusinessDB),
 
 		MinioWriter: s3.New(client, cfg),
 		MinioReader: s3.New(client, cfg),
+
+		ClientWriter: client_app.New(sources.BusinessDB),
 	}
 }
