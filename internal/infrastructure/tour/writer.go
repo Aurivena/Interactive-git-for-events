@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (r *Tour) Write(dateFrom, dateTo, sessionID string, places entity.TourOutput) (*entity.UUID, error) {
+func (r *Tour) Write(dateFrom, dateTo, sessionID string, places entity.Tour) (*entity.UUID, error) {
 
 	planJSON, err := json.Marshal(places)
 	if err != nil {

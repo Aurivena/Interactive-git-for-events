@@ -6,7 +6,7 @@ import (
 )
 
 type TourWrite interface {
-	Write(dateFrom, dateTo, sessionID string, places entity.TourOutput) (*entity.UUID, error)
+	Write(dateFrom, dateTo, sessionID string, places entity.Tour) (*entity.UUID, error)
 }
 
 type TourReader interface {

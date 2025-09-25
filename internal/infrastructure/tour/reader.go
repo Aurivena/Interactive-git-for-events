@@ -12,9 +12,8 @@ type planEnvelopeDays struct {
 	Days     []entity.DayPlan `json:"placesInfo"`
 }
 
-func normalizeTourOutput(dbFrom, dbTo time.Time, env *planEnvelopeDays, raw []byte) (entity.TourOutput, error) {
-	// Базовые даты — из БД
-	out := entity.TourOutput{
+func normalizeTourOutput(dbFrom, dbTo time.Time, env *planEnvelopeDays, raw []byte) (entity.Tour, error) {
+	out := entity.Tour{
 		DateTour: entity.DateTour{
 			DateFrom: dbFrom.Format("2006-01-02"),
 			DateTo:   dbTo.Format("2006-01-02"),
@@ -44,9 +43,7 @@ func normalizeTourOutput(dbFrom, dbTo time.Time, env *planEnvelopeDays, raw []by
 
 	var flat []entity.PlaceInfo
 	if err := json.Unmarshal(raw, &flat); err == nil && len(flat) > 0 {
-		out.Days = []entity.DayPlan{
-			{Day: out.DateFrom, Places: flat},
-		}
+		out.Days = []entity.DayPlan{{Day: out.DateFrom, Places: flat}}
 		return out, nil
 	}
 
@@ -55,6 +52,7 @@ func normalizeTourOutput(dbFrom, dbTo time.Time, env *planEnvelopeDays, raw []by
 
 func (r *Tour) Reader(sessionID string) ([]entity.TourOutput, error) {
 	type row struct {
+		ID       string    `db:"id"`
 		DateFrom time.Time `db:"date_from"`
 		DateTo   time.Time `db:"date_to"`
 		Plan     []byte    `db:"plan"`
@@ -62,7 +60,7 @@ func (r *Tour) Reader(sessionID string) ([]entity.TourOutput, error) {
 
 	var rows []row
 	if err := r.db.Select(&rows, `
-SELECT date_from, date_to, plan
+SELECT id, date_from, date_to, plan
 FROM tour
 WHERE session = $1
 ORDER BY date_from DESC
@@ -74,14 +72,18 @@ ORDER BY date_from DESC
 	for _, rr := range rows {
 		var env planEnvelopeDays
 		_ = json.Unmarshal(rr.Plan, &env)
-		tout, _ := normalizeTourOutput(rr.DateFrom, rr.DateTo, &env, rr.Plan)
-		out = append(out, tout)
+		tour, _ := normalizeTourOutput(rr.DateFrom, rr.DateTo, &env, rr.Plan)
+		out = append(out, entity.TourOutput{
+			ID:   entity.UUID(rr.ID),
+			Tour: tour,
+		})
 	}
 	return out, nil
 }
 
 func (r *Tour) ReaderByID(id entity.UUID) (*entity.TourOutput, error) {
 	type row struct {
+		ID       string    `db:"id"`
 		DateFrom time.Time `db:"date_from"`
 		DateTo   time.Time `db:"date_to"`
 		Plan     []byte    `db:"plan"`
@@ -89,7 +91,7 @@ func (r *Tour) ReaderByID(id entity.UUID) (*entity.TourOutput, error) {
 
 	var rr row
 	if err := r.db.Get(&rr, `
-SELECT date_from, date_to, plan
+SELECT id, date_from, date_to, plan
 FROM tour
 WHERE id = $1::uuid
 LIMIT 1
@@ -99,6 +101,9 @@ LIMIT 1
 
 	var env planEnvelopeDays
 	_ = json.Unmarshal(rr.Plan, &env)
-	tout, _ := normalizeTourOutput(rr.DateFrom, rr.DateTo, &env, rr.Plan)
-	return &tout, nil
+	tour, _ := normalizeTourOutput(rr.DateFrom, rr.DateTo, &env, rr.Plan)
+	return &entity.TourOutput{
+		ID:   entity.UUID(rr.ID),
+		Tour: tour,
+	}, nil
 }

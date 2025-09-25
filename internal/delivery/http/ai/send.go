@@ -56,7 +56,7 @@ func (h *Handler) Send(c *gin.Context) {
 // @Accept      json
 // @Produce     json
 // @Param       input  body      entity.TourInput  true  "Параметры генерации тура"
-// @Success     200    {object}  entity.TourOutput "Сгенерированный тур"
+// @Success     200    {object}  entity.Tour "Сгенерированный тур"
 // @Failure     400    {object}  entity.AppErrorDoc "Ошибка валидации входных данных"
 // @Failure     500    {object}  entity.AppErrorDoc"Внутренняя ошибка сервера"
 // @Router      /ai/generate/tour [post]

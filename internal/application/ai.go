@@ -115,7 +115,7 @@ func (a *Application) GenerateTour(input *entity.TourInput, sessionID string) (*
 				DateTo:   "2025-09-27",
 			},
 			PerDayLimit:  5,
-			Tier:         "standard",
+			Tier:         []string{"standard", "economy"},
 			KindPriority: []entity.Kind{"cinema", "historic", "park", "restaurant"},
 			DayStart:     "10:00",
 			DayEnd:       "22:00",
@@ -139,18 +139,21 @@ func (a *Application) GenerateTour(input *entity.TourInput, sessionID string) (*
 		return nil, err
 	}
 
-	var output entity.TourOutput
-	if err = json.Unmarshal(raw, &output); err != nil {
+	var tour entity.Tour
+	if err = json.Unmarshal(raw, &tour); err != nil {
 		logrus.Error(err)
 		return nil, err
 	}
 
-	_, err = a.post.TourWriter.Write(aiOutput.DateFrom, aiOutput.DateTo, sessionID, output)
+	id, err := a.post.TourWriter.Write(aiOutput.DateFrom, aiOutput.DateTo, sessionID, tour)
 	if err != nil {
 		return nil, err
 	}
 
-	return &output, nil
+	return &entity.TourOutput{
+		ID:   *id,
+		Tour: tour,
+	}, nil
 }
 
 func checkCoordinates(lat, lon **float64) {

@@ -11,7 +11,7 @@ import (
 func (r *Tour) GenerateTour(input entity.RouteParams, lon, lat float64) (json.RawMessage, error) {
 
 	var route json.RawMessage
-	if err := r.db.Get(&route, buildFullSQL(), input.DateFrom, input.DateTo, lon, lat, input.PerDayLimit, input.Tier, pq.Array(input.KindPriority), input.DayStart, input.DayEnd); err != nil {
+	if err := r.db.Get(&route, buildFullSQL(), input.DateFrom, input.DateTo, lon, lat, input.PerDayLimit, pq.Array(input.Tier), pq.Array(input.KindPriority), input.DayStart, input.DayEnd); err != nil {
 		logrus.Error(err)
 		return nil, err
 	}

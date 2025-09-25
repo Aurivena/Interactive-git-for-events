@@ -7,11 +7,11 @@ type TourInput struct {
 }
 type RouteParams struct {
 	DateTour
-	PerDayLimit  int    `json:"per_day_limit"`
-	Tier         string `json:"tier"`
-	KindPriority []Kind `json:"kind_priority"`
-	DayStart     string `json:"day_start"`
-	DayEnd       string `json:"day_end"`
+	PerDayLimit  int      `json:"per_day_limit"`
+	Tier         []string `json:"tiers"`
+	KindPriority []Kind   `json:"kind_priority"`
+	DayStart     string   `json:"day_start"`
+	DayEnd       string   `json:"day_end"`
 }
 
 type DateTour struct {
@@ -29,7 +29,12 @@ type DayPlan struct {
 	Places []PlaceInfo `json:"places"`
 }
 
-type TourOutput struct {
+type Tour struct {
 	DateTour `json:"date_tour"`
 	Days     []DayPlan `json:"placesInfo"`
+}
+
+type TourOutput struct {
+	ID   UUID `json:"id"`
+	Tour Tour `json:"tour"`
 }

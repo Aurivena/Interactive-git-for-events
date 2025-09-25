@@ -13,7 +13,7 @@ import (
 // @Description Возвращает список всех туров, сохранённых за конкретную сессию (X-Session-ID).
 // @Tags        Tour
 // @Produce     json
-// @Success     200  {array}   entity.TourOutput  "Список туров"
+// @Success     200  {array}   entity.Tour  "Список туров"
 // @Failure     500  {object}  entity.AppErrorDoc  "Внутренняя ошибка сервера"
 // @Router      /tours [get]
 // @Param       X-Session-ID  header  string  true  "Идентификатор сессии"
@@ -40,7 +40,7 @@ func (h *Handler) All(c *gin.Context) {
 // @Tags        Tour
 // @Produce     json
 // @Param       id   path     string           true  "UUID тура"
-// @Success     200  {object} entity.TourOutput "Найденный тур"
+// @Success     200  {object} entity.Tour "Найденный тур"
 // @Failure     400  {object} entity.AppErrorDoc "Некорректный ID"
 // @Failure     500  {object} entity.AppErrorDoc "Внутренняя ошибка сервера"
 // @Router      /tours/{id} [get]

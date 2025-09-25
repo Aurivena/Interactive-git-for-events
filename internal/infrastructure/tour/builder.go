@@ -2,7 +2,6 @@ package tour
 
 import "strings"
 
-// Собирает весь SQL
 func buildFullSQL() string {
 	parts := []string{
 		"WITH RECURSIVE",
@@ -16,7 +15,7 @@ func buildFullSQL() string {
 		buildDayKindStatsCTE() + ",",
 		buildPerDayCTE() + ",",
 		buildStartNodesCTE() + ",",
-		buildRouteCTE(), // важно: без запятой
+		buildRouteCTE(),
 		buildFinalSelect(),
 	}
 	return strings.Join(parts, "\n")
@@ -26,18 +25,17 @@ func buildParamsCTE() string {
 	return `
 cte_params AS (
   SELECT
-    $1::date        AS date_from,
-    $2::date        AS date_to,
-    $3::float8      AS start_lon,
-    $4::float8      AS start_lat,
-    $5::int         AS per_day_limit,
-    $6::tier_enum   AS max_tier,
-    $7::kind_enum[] AS kind_priority,
-    $8::time        AS day_start,
-    $9::time        AS day_end
+    $1::date                  AS date_from,
+    $2::date                  AS date_to,
+    $3::float8                AS start_lon,
+    $4::float8                AS start_lat,
+    $5::int                   AS per_day_limit,
+    ($6::text[])::tier_enum[] AS allowed_tiers,
+    ($7::text[])::kind_enum[] AS kind_priority,
+    $8::time                  AS day_start,
+    $9::time                  AS day_end
 )`
 }
-
 func buildDaysCTE() string {
 	return `
 cte_days AS (
@@ -84,7 +82,14 @@ cte_candidates AS (
     COALESCE(array_position((SELECT kind_priority FROM cte_params), pl.kind), 999) AS kind_rank
   FROM cte_days d
   JOIN place pl
-    ON pl.tier <= (SELECT max_tier FROM cte_params)
+    ON (
+         (SELECT COALESCE(cardinality(allowed_tiers),0) FROM cte_params) = 0
+         OR EXISTS (
+              SELECT 1
+              FROM unnest((SELECT allowed_tiers FROM cte_params)) AS t(v)
+              WHERE t.v = pl.tier
+            )
+       )
   LEFT JOIN LATERAL (
     SELECT COALESCE(array_agg(pi.image_id ORDER BY pi.image_id), ARRAY[]::uuid[]) AS images
     FROM place_image pi
@@ -160,7 +165,7 @@ cte_unique_open AS (
   ) t
   WHERE day_rn = 1
 ),
-cte_unique_global AS (  -- одно место максимум в одном дне на весь период
+cte_unique_global AS (
   SELECT
     uo.*,
     row_number() OVER (
@@ -246,7 +251,6 @@ cte_route (
   id, title, address, description, lon, lat, kind, tier, tags, images,
   leg_km, visited, visited_kinds
 ) AS (
-  -- старт на каждый день
   SELECT
     s.day,
     1 AS step,
@@ -282,7 +286,6 @@ cte_route (
 
   UNION ALL
 
-  -- продолжение того же дня
   SELECT
     r.day,
     r.step + 1,
