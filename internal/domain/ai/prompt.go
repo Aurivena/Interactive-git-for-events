@@ -87,58 +87,63 @@ const RouteParamsFromSurveyPrompt = `
   "date_from": "",                // всегда пусто (даты не передаются)
   "date_to":   "",                // всегда пусто
   "per_day_limit": 6,             // дефолт
-  "tier": "economy" | "value" | "standard" | "premium" | "upscale",
-  "kind_priority": [              // массив значений kind в нижнем регистре
-    "cinema" | "theatre" | "concert_hall" | "stadium" | "sport" |
-    "museum" | "historic" | "memorial" | "park" | "attraction" |
-    "monument" | "restaurant"
+  "tiers": ["..."],               // приоритетный массив tier_enum от текущего уровня вниз
+  "kind_priority": [              // массив значений kind из допустимого списка
+    "cinema" | "theatre" | "museum" | "historic" | "park" | "restaurant"
   ],
   "day_start": "10:00",           // дефолт
   "day_end":   "22:00"            // дефолт
 }
 
-Логика вычислений из анкеты (survey):
-- tier зависит от comfortService:
+Правила вычисления:
+
+1) tiers (приоритетный массив уровней сервиса)
+- Маппинг comfortService (целое 0–5) → базовый tier:
   0–1 → "economy"
   2   → "value"
   3   → "standard"
   4   → "premium"
   5   → "upscale"
+- Верни массив, начиная с базового tier и далее *вниз* до "economy".
+  Примеры:
+  comfortService=3 → ["standard","value","economy"]
+  comfortService=5 → ["upscale","premium","standard","value","economy"]
+  comfortService=0/1 → ["economy"]
 
-- kind_priority формируется по убыванию интересов из анкеты.
-  Сопоставление полей анкеты → наборов kind:
-  • culture    → ["theatre","concert_hall","cinema"]
-  • sport      → ["sport","stadium"]
-  • history    → ["museum","historic","memorial","monument"]
-  • freshAir   → ["park","attraction"]
-  • religion   → ["historic","memorial","monument"]
+2) kind_priority (по убыванию интересов из анкеты, только допустимые kind из БД)
+Сопоставление полей анкеты → наборов kind:
+  • culture    → ["theatre","cinema"]
+  • sport      → []              (в БД таких kind нет)
+  • history    → ["museum","historic"]
+  • freshAir   → ["park"]
+  • religion   → ["historic"]
   • restaurant → ["restaurant"]
-  • (shop игнорируй: такого kind нет в системе)
+  • shop       → []              (игнорируем)
 
 Правила построения kind_priority:
-1) Для каждого направления, где оценка > 0, включи соответствующие виды в итоговый массив.
-2) Отсортируй группы по убыванию оценки (более высокая оценка — выше в списке).
-3) Внутри группы оставь порядок, как указан выше.
-4) Удали дубликаты при объединении групп, сохраняя первый встретившийся порядок.
-5) Если все оценки = 0, верни дефолт: ["museum","park","restaurant","cinema","theatre"].
+  a) Для каждого направления, где оценка > 0, добавь соответствующие kind.
+  b) Группы сортируй по убыванию оценки (большая оценка — раньше).
+  c) Внутри группы оставь порядок как указано выше.
+  d) Удали дубликаты, сохраняя первый встретившийся порядок.
+  e) Если все оценки = 0, верни дефолт: ["museum","park","restaurant","cinema","theatre"].
 
 Ограничения:
-- Верни строго валидный JSON-объект (без массива, без пояснений).
-- Все значения — в нижнем регистре и только из разрешённого списка.
+- Верни строго валидный JSON-объект (без массива и без пояснений вокруг).
+- Все значения — в нижнем регистре и только из разрешённых списков.
 - date_from/date_to всегда пустые строки; day_start="10:00", day_end="22:00"; per_day_limit=6.
-- Часовой пояс подразумеваем Asia/Yekaterinburg (UTC+5), но так как даты/время не передаются, на выход это не влияет.
+- Часовой пояс подразумеваем Asia/Yekaterinburg (UTC+5), но на ответ это не влияет.
 
 Пример:
 Входная анкета:
-{"comfortService":5,"culture":3,"sport":0,"history":4,"freshAir":2,"religion":1,"shop":0,"restaurant":5}
+{"comfortService":3,"culture":4,"sport":0,"history":5,"freshAir":2,"religion":1,"shop":0,"restaurant":3}
 
 Ожидаемый ответ:
 {
   "date_from": "",
   "date_to": "",
   "per_day_limit": 6,
-  "tier": "upscale",
-  "kind_priority": ["restaurant","museum","historic","memorial","monument","theatre","concert_hall","cinema","park","attraction"],
+  "tiers": ["standard","value","economy"],
+  "kind_priority": ["museum","historic","theatre","cinema","restaurant","park"],
   "day_start": "10:00",
   "day_end": "22:00"
 }

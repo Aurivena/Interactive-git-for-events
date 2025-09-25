@@ -149,9 +149,10 @@ cte_open_candidates AS (
       )
 )`
 }
+
 func buildRankedCTE() string {
 	return `
--- 1) Дедуп внутри дня: одно место один раз в конкретный день (когда открыто)
+-- 1) Дедуп внутри дня (одно место один раз в конкретный день)
 cte_unique_open AS (
   SELECT *
   FROM (
@@ -166,56 +167,61 @@ cte_unique_open AS (
   WHERE day_rn = 1
 ),
 
--- 2) Индексация всех дней периода
+-- 2) Индексация дней периода
 cte_days_idx AS (
   SELECT
     d.day,
-    row_number() OVER (ORDER BY d.day)           AS day_idx,
-    count(*)    OVER ()                          AS days_total
+    row_number() OVER (ORDER BY d.day) AS day_idx,
+    count(*)    OVER ()                AS days_total
   FROM cte_days d
 ),
 
--- 3) Считаем «вес» места (один раз на место), чтобы задать стабильный порядок
+-- 3) Стабильный порядок мест (один раз на id)
 cte_place_order AS (
   SELECT
     uo.id,
-    min(uo.kind_rank)      AS min_kind_rank,
+    min(uo.kind_rank)       AS min_kind_rank,
     min(uo.dist_from_start) AS min_dist
   FROM cte_unique_open uo
   GROUP BY uo.id
 ),
 
--- 4) Глобально распределяем места по дням:
---    для каждого place берём номер place_idx и мапим его на индекс дня target_idx;
---    если место не открыто в этом дне, берём k-й доступный день по кругу (wrap).
+-- 4) Раскладываем все (id, day) по сетке
 cte_spread AS (
   SELECT
     uo.*,
     di.day_idx,
     di.days_total,
-    row_number() OVER (PARTITION BY uo.id ORDER BY di.day_idx)        AS day_rank_for_place,
-    count(*)    OVER (PARTITION BY uo.id)                              AS place_days_total,
+    row_number() OVER (PARTITION BY uo.id ORDER BY di.day_idx) AS day_rank_for_place,
+    count(*)    OVER (PARTITION BY uo.id)                       AS place_days_total,
     row_number() OVER (
       ORDER BY po.min_kind_rank NULLS LAST, po.min_dist, uo.id
-    )                                                                  AS place_idx
+    )                                                           AS place_idx
   FROM cte_unique_open uo
-  JOIN cte_days_idx di ON di.day = uo.day
-  JOIN cte_place_order po ON po.id = uo.id
+  JOIN cte_days_idx   di ON di.day = uo.day
+  JOIN cte_place_order po ON po.id  = uo.id
 ),
 
--- 5) Выбираем для каждого места ровно один день:
---    chosen_rank = ((place_idx - 1) % place_days_total) + 1
+-- 5) Выбираем РОВНО один день на каждое place.id (равномерно)
 cte_picked AS (
   SELECT *
   FROM cte_spread
   WHERE day_rank_for_place = ((place_idx - 1) % place_days_total) + 1
 ),
 
--- 6) Финальный пул кандидатов (уникальных на весь период)
+-- 6) На всякий пожарный убираем любые остаточные дубли по id
+cte_picked_distinct AS (
+  SELECT DISTINCT ON (id)
+         *
+  FROM cte_picked
+  ORDER BY id, day_idx, kind_rank NULLS LAST, dist_from_start
+),
+
+-- 7) Финальный пул
 cte_ranked AS (
   SELECT *,
          row_number() OVER (ORDER BY kind_rank NULLS LAST, dist_from_start, id) AS global_rank
-  FROM cte_picked
+  FROM cte_picked_distinct
   LIMIT 10000
 )`
 }

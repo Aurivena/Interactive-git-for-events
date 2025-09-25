@@ -133,7 +133,8 @@ func (a *Application) GenerateTour(input *entity.TourInput, sessionID string) (*
 	}
 
 	checkCoordinates(&input.Lat, &input.Lon)
-
+	aiOutput.DateFrom = input.DateFrom
+	aiOutput.DateTo = input.DateTo
 	raw, err := a.post.TourGenerates.GenerateTour(aiOutput, *input.Lon, *input.Lat)
 	if err != nil {
 		return nil, err
