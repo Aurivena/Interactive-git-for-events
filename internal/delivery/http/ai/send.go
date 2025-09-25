@@ -49,6 +49,17 @@ func (h *Handler) Send(c *gin.Context) {
 	h.spond.SendResponseSuccess(c.Writer, envelope.Success, output)
 }
 
+// GenerateTour
+// @Summary     Сгенерировать маршрут тура
+// @Description Формирует новый тур на основе введённых параметров (даты, координаты, типы мест, лимиты).
+// @Tags        Tour
+// @Accept      json
+// @Produce     json
+// @Param       input  body      entity.TourInput  true  "Параметры генерации тура"
+// @Success     200    {object}  entity.TourOutput "Сгенерированный тур"
+// @Failure     400    {object}  entity.AppErrorDoc "Ошибка валидации входных данных"
+// @Failure     500    {object}  entity.AppErrorDoc"Внутренняя ошибка сервера"
+// @Router      /ai/generate/tour [post]
 func (h *Handler) GenerateTour(c *gin.Context) {
 	var input entity.TourInput
 	if err := c.ShouldBindJSON(&input); err != nil {

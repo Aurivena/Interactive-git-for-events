@@ -8,6 +8,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// All
+// @Summary     Получить все туры пользователя
+// @Description Возвращает список всех туров, сохранённых за конкретную сессию (X-Session-ID).
+// @Tags        Tour
+// @Produce     json
+// @Success     200  {array}   entity.TourOutput  "Список туров"
+// @Failure     500  {object}  entity.AppErrorDoc  "Внутренняя ошибка сервера"
+// @Router      /tours [get]
+// @Param       X-Session-ID  header  string  true  "Идентификатор сессии"
 func (h *Handler) All(c *gin.Context) {
 	output, err := h.application.TourAll(c.GetHeader(middleware.Session))
 	if err != nil {
@@ -25,6 +34,16 @@ func (h *Handler) All(c *gin.Context) {
 	h.spond.SendResponseSuccess(c.Writer, envelope.Success, output)
 }
 
+// ByID
+// @Summary     Получить тур по ID
+// @Description Возвращает тур по его уникальному идентификатору.
+// @Tags        Tour
+// @Produce     json
+// @Param       id   path     string           true  "UUID тура"
+// @Success     200  {object} entity.TourOutput "Найденный тур"
+// @Failure     400  {object} entity.AppErrorDoc "Некорректный ID"
+// @Failure     500  {object} entity.AppErrorDoc "Внутренняя ошибка сервера"
+// @Router      /tours/{id} [get]
 func (h *Handler) ByID(c *gin.Context) {
 	id := entity.UUID(c.Param("id"))
 	if ok := id.Valid(); !ok {
