@@ -115,8 +115,8 @@ func (a *Application) GenerateTour(input *entity.TourInput, sessionID string) (*
 				DateTo:   "2025-09-27",
 			},
 			PerDayLimit:  5,
-			Tier:         []string{"standard", "economy"},
-			KindPriority: []entity.Kind{"cinema", "historic", "park", "restaurant"},
+			Tier:         []string{"standard", "economy", "value", "premium"},
+			KindPriority: []entity.Kind{"cinema", "historic", "museum", "park", "restaurant"},
 			DayStart:     "10:00",
 			DayEnd:       "22:00",
 		}

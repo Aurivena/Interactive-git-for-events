@@ -149,9 +149,9 @@ cte_open_candidates AS (
       )
 )`
 }
-
 func buildRankedCTE() string {
 	return `
+-- 1) Дедуп внутри дня: одно место один раз в конкретный день (когда открыто)
 cte_unique_open AS (
   SELECT *
   FROM (
@@ -165,21 +165,58 @@ cte_unique_open AS (
   ) t
   WHERE day_rn = 1
 ),
-cte_unique_global AS (
+
+-- 2) Индексация всех дней периода
+cte_days_idx AS (
+  SELECT
+    d.day,
+    row_number() OVER (ORDER BY d.day)           AS day_idx,
+    count(*)    OVER ()                          AS days_total
+  FROM cte_days d
+),
+
+-- 3) Считаем «вес» места (один раз на место), чтобы задать стабильный порядок
+cte_place_order AS (
+  SELECT
+    uo.id,
+    min(uo.kind_rank)      AS min_kind_rank,
+    min(uo.dist_from_start) AS min_dist
+  FROM cte_unique_open uo
+  GROUP BY uo.id
+),
+
+-- 4) Глобально распределяем места по дням:
+--    для каждого place берём номер place_idx и мапим его на индекс дня target_idx;
+--    если место не открыто в этом дне, берём k-й доступный день по кругу (wrap).
+cte_spread AS (
   SELECT
     uo.*,
+    di.day_idx,
+    di.days_total,
+    row_number() OVER (PARTITION BY uo.id ORDER BY di.day_idx)        AS day_rank_for_place,
+    count(*)    OVER (PARTITION BY uo.id)                              AS place_days_total,
     row_number() OVER (
-      PARTITION BY uo.id
-      ORDER BY uo.day, uo.kind_rank NULLS LAST, uo.dist_from_start
-    ) AS first_day_rn
+      ORDER BY po.min_kind_rank NULLS LAST, po.min_dist, uo.id
+    )                                                                  AS place_idx
   FROM cte_unique_open uo
+  JOIN cte_days_idx di ON di.day = uo.day
+  JOIN cte_place_order po ON po.id = uo.id
 ),
+
+-- 5) Выбираем для каждого места ровно один день:
+--    chosen_rank = ((place_idx - 1) % place_days_total) + 1
+cte_picked AS (
+  SELECT *
+  FROM cte_spread
+  WHERE day_rank_for_place = ((place_idx - 1) % place_days_total) + 1
+),
+
+-- 6) Финальный пул кандидатов (уникальных на весь период)
 cte_ranked AS (
   SELECT *,
          row_number() OVER (ORDER BY kind_rank NULLS LAST, dist_from_start, id) AS global_rank
-  FROM cte_unique_global
-  WHERE first_day_rn = 1
-  LIMIT 300
+  FROM cte_picked
+  LIMIT 10000
 )`
 }
 
@@ -335,27 +372,35 @@ SELECT jsonb_build_object(
 )
 FROM (
   SELECT
-    day,
+    d.day,
     jsonb_build_object(
-      'day', day,
-      'places', jsonb_agg(
-        jsonb_build_object(
-          'step', step,
-          'id', id,
-          'title', title,
-          'description', description,
-          'address', address,
-          'lon', lon,
-          'lat', lat,
-          'kind', kind::text,
-          'tier', tier::text,
-          'tags', COALESCE(tags, '{}'::jsonb),
-          'images', to_jsonb(COALESCE(images, ARRAY[]::uuid[])),
-          'leg_km', round(leg_km::numeric, 2)
-        ) ORDER BY step
-      )
+      'day', d.day,
+      'places',
+        COALESCE(
+          (
+            SELECT jsonb_agg(
+                     jsonb_build_object(
+                       'step', r.step,
+                       'id', r.id,
+                       'title', r.title,
+                       'description', r.description,
+                       'address', r.address,
+                       'lon', r.lon,
+                       'lat', r.lat,
+                       'kind', r.kind::text,
+                       'tier', r.tier::text,
+                       'tags', COALESCE(r.tags, '{}'::jsonb),
+                       'images', to_jsonb(COALESCE(r.images, ARRAY[]::uuid[])),
+                       'leg_km', round(r.leg_km::numeric, 2)
+                     )
+                     ORDER BY r.step
+                   )
+            FROM cte_route r
+            WHERE r.day = d.day
+          ),
+          '[]'::jsonb
+        )
     ) AS day_block
-  FROM cte_route
-  GROUP BY day
+  FROM cte_days d
 ) t`
 }
