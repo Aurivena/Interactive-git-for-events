@@ -66,30 +66,28 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 		return nil, err
 	}
 
-	output := make([]entity.ChatOutput, len(params))
-
+	output := make([]entity.ChatOutput, len(aiOutput))
 	for i := range aiOutput {
-
 		if aiOutput[i].Count == 0 {
 			aiOutput[i].Count = ai.DefaultCount
 		}
-		out, err := a.post.PlaceReader.Get(&aiOutput[i], input.Lon, input.Lat)
+
+		places, err := a.post.PlaceReader.Get(&aiOutput[i], input.Lon, input.Lat)
 		if err != nil {
 			return nil, err
 		}
 
-		for i := range out {
-			images, err := a.post.PlaceReader.ImagesByPlaceID(out[i].ID)
+		for j := range places {
+			imgs, err := a.post.PlaceReader.ImagesByPlaceID(places[j].ID)
 			if err != nil {
 				return nil, err
 			}
-			out[i].Images = images
+			places[j].Images = imgs
 		}
 
-		if out != nil {
-			output[i].PlaceInfo = out
-			output[i].Message = aiOutput[i].Message
-		}
+		// Заполняем всегда, даже если places пустой/nil — это ок
+		output[i].PlaceInfo = places
+		output[i].Message = aiOutput[i].Message
 	}
 	if err = a.post.HistoryWriter.Write(output, input.Message, sessionID); err != nil {
 		return nil, err
