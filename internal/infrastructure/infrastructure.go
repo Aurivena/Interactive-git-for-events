@@ -5,6 +5,7 @@ import (
 	"arch/internal/infrastructure/repository/history"
 	"arch/internal/infrastructure/repository/place"
 	"arch/internal/infrastructure/s3"
+	"arch/internal/infrastructure/tour"
 	"arch/internal/ports"
 
 	client_app "arch/internal/infrastructure/repository/client"
@@ -25,6 +26,11 @@ type Infrastructure struct {
 	MinioReader ports.MinioReader
 
 	ClientWriter ports.ClientWrite
+	ClientReader ports.ClientReade
+
+	TourWriter    ports.TourWrite
+	TourReader    ports.TourReader
+	TourGenerates ports.TourGenerate
 }
 
 type Sources struct {
@@ -44,5 +50,10 @@ func New(sources *Sources, client *minio.Client, cfg entity.MinioConfig) *Infras
 		MinioReader: s3.New(client, cfg),
 
 		ClientWriter: client_app.New(sources.BusinessDB),
+		ClientReader: client_app.New(sources.BusinessDB),
+
+		TourWriter:    tour.New(sources.BusinessDB),
+		TourReader:    tour.New(sources.BusinessDB),
+		TourGenerates: tour.New(sources.BusinessDB),
 	}
 }

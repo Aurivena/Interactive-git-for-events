@@ -6,6 +6,7 @@ import (
 	"arch/internal/delivery/http/client"
 	"arch/internal/delivery/http/history"
 	"arch/internal/delivery/http/place"
+	"arch/internal/delivery/http/tour"
 	"arch/internal/delivery/middleware"
 	"arch/internal/domain/entity"
 	"arch/internal/server"
@@ -22,6 +23,7 @@ type Http struct {
 	Place      *place.Handler
 	History    *history.Handler
 	Client     *client.Handler
+	Tour       *tour.Handler
 	Middleware *middleware.Middleware
 }
 
@@ -31,6 +33,7 @@ func NewHttp(application *application.Application, spond *core.Spond, middleware
 		Place:      place.New(application, spond),
 		History:    history.New(application, spond),
 		Client:     client.New(application, spond),
+		Tour:       tour.New(application, spond),
 		Middleware: middleware,
 	}
 }
@@ -48,16 +51,23 @@ func (h *Http) InitHTTPHttps(config *entity.ServerConfig) *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	api := gHttp.Group("/api")
+	api := gHttp.Group("/api", h.Middleware.Session)
 	{
 
-		aiRouter := api.Group("/ai", h.Middleware.Session)
+		aiRouter := api.Group("/ai")
 		{
 			aiRouter.POST("/send", h.Ai.Send)
+			aiRouter.POST("/generate/tour", h.Ai.GenerateTour)
 			aiRouter.GET("/history", h.History.ListHistory)
 		}
 
-		clientApp := api.Group("/client", h.Middleware.Session)
+		tours := api.Group("/tours")
+		{
+			tours.GET("", h.Tour.All)
+			tours.GET("/:id", h.Tour.ByID)
+		}
+
+		clientApp := api.Group("/client")
 		{
 			clientApp.POST("/upsert", h.Client.Upsert)
 		}

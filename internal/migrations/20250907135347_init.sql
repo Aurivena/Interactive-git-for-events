@@ -7,9 +7,8 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TYPE  week_enum as enum('monday','tuesday','wednesday','thursday','friday','saturday','sunday');
 CREATE TYPE tier_enum as enum('economy','value','standard','premium','upscale');
 CREATE TYPE kind_enum  AS ENUM (
-    'cinema','theatre','concert_hall','stadium','sport','museum',
-    'historic','memorial','park','attraction',
-    'monument','restaurant'
+    'cinema','theatre','museum',
+    'historic','park','restaurant'
     );
 
 CREATE TABLE client (
@@ -35,6 +34,15 @@ CREATE TABLE IF NOT EXISTS place_image(
     PRIMARY KEY (place_id,image_id)
 );
 
+CREATE TABLE IF NOT EXISTS tour
+(
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    session varchar(255) NOT NULL ,
+    date_from date,
+    date_to date,
+    plan jsonb NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS history (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     session varchar(255) NOT NULL ,
@@ -51,6 +59,9 @@ ALTER TABLE history
     ADD CONSTRAINT fk_history_0
     FOREIGN KEY (session) REFERENCES client(session_id) ON DELETE CASCADE;
 
+ALTER TABLE tour
+    ADD CONSTRAINT fk_tour_0
+        FOREIGN KEY (session) REFERENCES client(session_id) ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS idx_tier_kind ON place(tier,kind);
 CREATE INDEX IF NOT EXISTS idx_place_trgm ON place USING gin((title || ' ' || address) gin_trgm_ops);

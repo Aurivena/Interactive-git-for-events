@@ -48,3 +48,34 @@ func (h *Handler) Send(c *gin.Context) {
 
 	h.spond.SendResponseSuccess(c.Writer, envelope.Success, output)
 }
+
+func (h *Handler) GenerateTour(c *gin.Context) {
+	var input entity.TourInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		h.spond.SendResponseError(c.Writer, &envelope.AppError{
+			Code: envelope.BadRequest,
+			Detail: envelope.ErrorDetail{
+				Title:   "Ошибка при запросе",
+				Message: "Не удалось обработать ваш запрос",
+				Solution: "1. Перепроверьте веденные вами данные.\n" +
+					"2. Обратитесь к администратору, если не смогли решить проблема.",
+			},
+		})
+		return
+	}
+
+	output, err := h.application.GenerateTour(&input, c.GetHeader(middleware.Session))
+	if err != nil {
+		h.spond.SendResponseError(c.Writer, &envelope.AppError{
+			Code: envelope.InternalServerError,
+			Detail: envelope.ErrorDetail{
+				Title:    "Ошибка сервера",
+				Message:  "Мы 100% устраняем эту ошибку!",
+				Solution: "1. Пожалуйста подождите и сообщите в тех-поддержку!!!",
+			},
+		})
+		return
+	}
+
+	h.spond.SendResponseSuccess(c.Writer, envelope.Success, output)
+}

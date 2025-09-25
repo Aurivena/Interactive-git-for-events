@@ -3,7 +3,17 @@ package application
 import (
 	"arch/internal/domain/ai"
 	"arch/internal/domain/entity"
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"time"
+
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	centerLon = 65.340956
+	centerLat = 55.439635
 )
 
 func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.ChatOutput, error) {
@@ -42,19 +52,28 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 		}
 		return ot, nil
 	}
-	params, err := q.Send(input.Message)
+	survey, err := a.post.ClientReader.Read(sessionID)
+	if err != nil {
+		return nil, err
+	}
+	params, err := q.Send(input.Message, ai.SendPrompt, survey)
+	if err != nil {
+		return nil, err
+	}
+
+	aiOutput, err := ai.BuildOutput[[]entity.RequestPayload](bytes.NewReader(params))
 	if err != nil {
 		return nil, err
 	}
 
 	output := make([]entity.ChatOutput, len(params))
 
-	for i := range params {
+	for i := range aiOutput {
 
-		if params[i].Count == 0 {
-			params[i].Count = ai.DefaultCount
+		if aiOutput[i].Count == 0 {
+			aiOutput[i].Count = ai.DefaultCount
 		}
-		out, err := a.post.PlaceReader.Get(&params[i], input.Lon, input.Lat)
+		out, err := a.post.PlaceReader.Get(&aiOutput[i], input.Lon, input.Lat)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +88,7 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 
 		if out != nil {
 			output[i].PlaceInfo = out
-			output[i].Message = params[i].Message
+			output[i].Message = aiOutput[i].Message
 		}
 	}
 	if err = a.post.HistoryWriter.Write(output, input.Message, sessionID); err != nil {
@@ -77,4 +96,70 @@ func (a *Application) SendAi(input entity.UserSend, sessionID string) ([]entity.
 	}
 
 	return output, nil
+}
+
+func (a *Application) GenerateTour(input *entity.TourInput, sessionID string) (*entity.TourOutput, error) {
+	survey, err := a.post.ClientReader.Read(sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	q := ai.New(*a.aiConfig)
+	message := fmt.Sprintf("Составь тут на даты от %s до %s", input.DateFrom, input.DateTo)
+
+	var aiOutput entity.RouteParams
+	if input.IsTest {
+		aiOutput = entity.RouteParams{
+			DateTour: entity.DateTour{
+				DateFrom: "2025-09-25",
+				DateTo:   "2025-09-27",
+			},
+			PerDayLimit:  5,
+			Tier:         "standard",
+			KindPriority: []entity.Kind{"museum", "park", "cinema", "restaurant"},
+			DayStart:     "10:00",
+			DayEnd:       "22:00",
+		}
+
+	} else {
+		params, err := q.Send(message, ai.RouteParamsFromSurveyPrompt, survey)
+		if err != nil {
+			return nil, err
+		}
+		aiOutput, err = ai.BuildOutput[entity.RouteParams](bytes.NewReader(params))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	checkCoordinates(&input.Lat, &input.Lon)
+
+	raw, err := a.post.TourGenerates.GenerateTour(aiOutput, *input.Lon, *input.Lat)
+	if err != nil {
+		return nil, err
+	}
+
+	var output entity.TourOutput
+	if err = json.Unmarshal(raw, &output); err != nil {
+		logrus.Error(err)
+		return nil, err
+	}
+
+	_, err = a.post.TourWriter.Write(input.DateFrom, input.DateTo, sessionID, output)
+	if err != nil {
+		return nil, err
+	}
+
+	return &output, nil
+}
+
+func checkCoordinates(lat, lon **float64) {
+	if *lat == nil {
+		defLat := centerLat
+		*lat = &defLat
+	}
+	if *lon == nil {
+		defLon := centerLon
+		*lon = &defLon
+	}
 }

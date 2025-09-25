@@ -4,6 +4,7 @@ import (
 	"arch/internal/domain/entity"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"time"
@@ -45,11 +46,11 @@ func New(cfg entity.AiConfig) *Ai {
 	}
 }
 
-func (q *Ai) Send(message string) ([]entity.RequestPayload, error) {
+func (q *Ai) Send(message, systemPrompt string, survey json.RawMessage) ([]byte, error) {
 	if q.client == nil {
 		q.client = &http.Client{Timeout: defaultTimeout}
 	}
-	payload, err := q.buildPayload(message)
+	payload, err := q.buildPayload(message, systemPrompt, survey)
 	if err != nil {
 		return nil, err
 	}
@@ -90,10 +91,5 @@ func (q *Ai) Send(message string) ([]entity.RequestPayload, error) {
 		return nil, fmt.Errorf("AI http %d: %s", resp.StatusCode, msg)
 	}
 
-	output, err := buildOutput(bytes.NewReader(b))
-	if err != nil {
-		return nil, err
-	}
-
-	return output, nil
+	return b, nil
 }
