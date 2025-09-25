@@ -2,20 +2,21 @@ package tour
 
 import "strings"
 
+// Собирает весь SQL
 func buildFullSQL() string {
 	parts := []string{
 		"WITH RECURSIVE",
 		buildParamsCTE() + ",",
 		buildDaysCTE() + ",",
 		buildWeekdayMapCTE() + ",",
-		buildCandidatesCTE() + ",", // все виды, без белого списка
+		buildCandidatesCTE() + ",",
 		buildScheduleFilterCTE() + ",",
-		buildRankedCTE() + ",", // глобальная дедупликация по place.id
+		buildRankedCTE() + ",",
 		buildAssignedCTE() + ",",
 		buildDayKindStatsCTE() + ",",
 		buildPerDayCTE() + ",",
 		buildStartNodesCTE() + ",",
-		buildRouteCTE(), // ВАЖНО: без запятой
+		buildRouteCTE(), // важно: без запятой
 		buildFinalSelect(),
 	}
 	return strings.Join(parts, "\n")
@@ -40,9 +41,11 @@ cte_params AS (
 func buildDaysCTE() string {
 	return `
 cte_days AS (
-  SELECT generate_series((SELECT date_from FROM cte_params),
-                         (SELECT date_to   FROM cte_params),
-                         interval '1 day')::date AS day
+  SELECT generate_series(
+           (SELECT date_from FROM cte_params),
+           (SELECT date_to   FROM cte_params),
+           interval '1 day'
+         )::date AS day
 )`
 }
 
@@ -83,7 +86,7 @@ cte_candidates AS (
   JOIN place pl
     ON pl.tier <= (SELECT max_tier FROM cte_params)
   LEFT JOIN LATERAL (
-   SELECT COALESCE(array_agg(pi.image_id ORDER BY pi.image_id), ARRAY[]::uuid[]) AS images
+    SELECT COALESCE(array_agg(pi.image_id ORDER BY pi.image_id), ARRAY[]::uuid[]) AS images
     FROM place_image pi
     WHERE pi.place_id = pl.id
   ) img ON TRUE
@@ -93,30 +96,52 @@ cte_candidates AS (
 func buildScheduleFilterCTE() string {
 	return `
 cte_open_candidates AS (
-  SELECT c.*
-  FROM cte_candidates c
-  JOIN cte_weekday_map wm ON wm.day = c.day
+  WITH norm AS (
+    SELECT c.*, wm.week_txt AS needed_day
+    FROM cte_candidates c
+    JOIN cte_weekday_map wm ON wm.day = c.day
+  )
+  SELECT n.*
+  FROM norm n
   WHERE
-    c.tags->'schedule' IS NULL
-    OR EXISTS (
-      SELECT 1
-      FROM jsonb_array_elements(c.tags->'schedule') s(obj)
-      WHERE
-        lower(trim((obj->>'week'))) = wm.week_txt
-        AND (
-          (
-            COALESCE((obj->>'spans_midnight')::boolean, false) = false
-            AND GREATEST((SELECT day_start FROM cte_params),(obj->>'start')::time)
-                < LEAST((SELECT day_end FROM cte_params),(obj->>'end')::time)
+      n.tags->'schedule' IS NULL
+      OR jsonb_typeof(n.tags->'schedule') <> 'array'
+      OR jsonb_array_length(n.tags->'schedule') = 0
+      OR EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(n.tags->'schedule') s(obj)
+        WHERE
+          CASE lower(trim(obj->>'week'))
+            WHEN 'monday'      THEN 'monday'
+            WHEN 'tuesday'     THEN 'tuesday'
+            WHEN 'wednesday'   THEN 'wednesday'
+            WHEN 'thursday'    THEN 'thursday'
+            WHEN 'friday'      THEN 'friday'
+            WHEN 'saturday'    THEN 'saturday'
+            WHEN 'sunday'      THEN 'sunday'
+            WHEN 'понедельник' THEN 'monday'
+            WHEN 'вторник'     THEN 'tuesday'
+            WHEN 'среда'       THEN 'wednesday'
+            WHEN 'четверг'     THEN 'thursday'
+            WHEN 'пятница'     THEN 'friday'
+            WHEN 'суббота'     THEN 'saturday'
+            WHEN 'воскресенье' THEN 'sunday'
+            ELSE NULL
+          END = n.needed_day
+          AND (
+            (
+              COALESCE((obj->>'spans_midnight')::boolean, false) = false
+              AND GREATEST((SELECT day_start FROM cte_params),(obj->>'start')::time)
+                  < LEAST((SELECT day_end FROM cte_params),(obj->>'end')::time)
+            )
+            OR
+            (
+              COALESCE((obj->>'spans_midnight')::boolean, false) = true
+              AND ( (SELECT day_end FROM cte_params) > (obj->>'start')::time
+                 OR (SELECT day_start FROM cte_params) < (obj->>'end')::time )
+            )
           )
-          OR
-          (
-            COALESCE((obj->>'spans_midnight')::boolean, false) = true
-            AND ( (SELECT day_end FROM cte_params) > (obj->>'start')::time
-               OR (SELECT day_start FROM cte_params) < (obj->>'end')::time )
-          )
-        )
-    )
+      )
 )`
 }
 
@@ -135,8 +160,7 @@ cte_unique_open AS (
   ) t
   WHERE day_rn = 1
 ),
--- глобальная дедупликация: одно место (id) максимум в одном дне
-cte_unique_global AS (
+cte_unique_global AS (  -- одно место максимум в одном дне на весь период
   SELECT
     uo.*,
     row_number() OVER (
@@ -322,8 +346,8 @@ FROM (
           'lat', lat,
           'kind', kind::text,
           'tier', tier::text,
- 'tags', COALESCE(tags, '{}'::jsonb),
- 'images', to_jsonb(COALESCE(images, ARRAY[]::uuid[])),
+          'tags', COALESCE(tags, '{}'::jsonb),
+          'images', to_jsonb(COALESCE(images, ARRAY[]::uuid[])),
           'leg_km', round(leg_km::numeric, 2)
         ) ORDER BY step
       )

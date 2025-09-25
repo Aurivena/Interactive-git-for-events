@@ -116,7 +116,7 @@ func (a *Application) GenerateTour(input *entity.TourInput, sessionID string) (*
 			},
 			PerDayLimit:  5,
 			Tier:         "standard",
-			KindPriority: []entity.Kind{"museum", "park", "cinema", "restaurant"},
+			KindPriority: []entity.Kind{"cinema", "historic", "park", "restaurant"},
 			DayStart:     "10:00",
 			DayEnd:       "22:00",
 		}
@@ -145,7 +145,7 @@ func (a *Application) GenerateTour(input *entity.TourInput, sessionID string) (*
 		return nil, err
 	}
 
-	_, err = a.post.TourWriter.Write(input.DateFrom, input.DateTo, sessionID, output)
+	_, err = a.post.TourWriter.Write(aiOutput.DateFrom, aiOutput.DateTo, sessionID, output)
 	if err != nil {
 		return nil, err
 	}
@@ -155,11 +155,18 @@ func (a *Application) GenerateTour(input *entity.TourInput, sessionID string) (*
 
 func checkCoordinates(lat, lon **float64) {
 	if *lat == nil {
-		defLat := centerLat
-		*lat = &defLat
+		v := centerLat
+		*lat = &v
 	}
 	if *lon == nil {
-		defLon := centerLon
-		*lon = &defLon
+		v := centerLon
+		*lon = &v
+	}
+	if **lat < -90 || **lat > 90 {
+		if **lon >= -90 && **lon <= 90 {
+			tmp := **lat
+			**lat = **lon
+			**lon = tmp
+		}
 	}
 }
