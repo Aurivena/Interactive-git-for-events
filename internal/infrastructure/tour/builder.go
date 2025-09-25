@@ -8,14 +8,14 @@ func buildFullSQL() string {
 		buildParamsCTE() + ",",
 		buildDaysCTE() + ",",
 		buildWeekdayMapCTE() + ",",
-		buildCandidatesCTE() + ",",
+		buildCandidatesCTE() + ",", // все виды, без белого списка
 		buildScheduleFilterCTE() + ",",
-		buildRankedCTE() + ",",
+		buildRankedCTE() + ",", // глобальная дедупликация по place.id
 		buildAssignedCTE() + ",",
-		buildDayKindStatsCTE() + ",", // <— НОВОЕ
+		buildDayKindStatsCTE() + ",",
 		buildPerDayCTE() + ",",
 		buildStartNodesCTE() + ",",
-		buildRouteCTE(),
+		buildRouteCTE(), // ВАЖНО: без запятой
 		buildFinalSelect(),
 	}
 	return strings.Join(parts, "\n")
@@ -69,7 +69,8 @@ func buildCandidatesCTE() string {
 cte_candidates AS (
   SELECT
     d.day,
-    pl.id, pl.title, pl.address, pl.lon, pl.lat, pl.kind, pl.tier, pl.tags,
+    pl.id, pl.title, pl.address, pl.description, pl.lon, pl.lat, pl.kind, pl.tier, pl.tags,
+    img.images,
     2 * 6371 * asin(
       sqrt(
         sin(radians((pl.lat - (SELECT start_lat FROM cte_params))/2))^2 +
@@ -81,7 +82,11 @@ cte_candidates AS (
   FROM cte_days d
   JOIN place pl
     ON pl.tier <= (SELECT max_tier FROM cte_params)
-   AND (SELECT kind_priority FROM cte_params) @> ARRAY[pl.kind]::kind_enum[]
+  LEFT JOIN LATERAL (
+   SELECT COALESCE(array_agg(pi.image_id ORDER BY pi.image_id), ARRAY[]::uuid[]) AS images
+    FROM place_image pi
+    WHERE pi.place_id = pl.id
+  ) img ON TRUE
 )`
 }
 
@@ -130,10 +135,21 @@ cte_unique_open AS (
   ) t
   WHERE day_rn = 1
 ),
+-- глобальная дедупликация: одно место (id) максимум в одном дне
+cte_unique_global AS (
+  SELECT
+    uo.*,
+    row_number() OVER (
+      PARTITION BY uo.id
+      ORDER BY uo.day, uo.kind_rank NULLS LAST, uo.dist_from_start
+    ) AS first_day_rn
+  FROM cte_unique_open uo
+),
 cte_ranked AS (
   SELECT *,
          row_number() OVER (ORDER BY kind_rank NULLS LAST, dist_from_start, id) AS global_rank
-  FROM cte_unique_open
+  FROM cte_unique_global
+  WHERE first_day_rn = 1
   LIMIT 300
 )`
 }
@@ -160,7 +176,7 @@ func buildPerDayCTE() string {
 cte_per_day AS (
   SELECT
     a.day,
-    a.id, a.title, a.address, a.lon, a.lat, a.kind, a.tier, a.tags,
+    a.id, a.title, a.address, a.description, a.lon, a.lat, a.kind, a.tier, a.tags, a.images,
     a.dist_from_start, a.kind_rank,
     row_number() OVER (
       PARTITION BY a.day
@@ -172,10 +188,13 @@ cte_per_day AS (
     ) AS per_kind_rn,
     GREATEST(
       1,
-      CEIL(
-        (SELECT per_day_limit FROM cte_params)::numeric
-        / NULLIF((SELECT kinds_cnt FROM cte_day_kind_stats dks WHERE dks.day = a.day), 0)
-      )::numeric
+      LEAST(
+        (SELECT per_day_limit FROM cte_params),
+        CEIL(
+          (SELECT per_day_limit FROM cte_params)::numeric
+          / NULLIF((SELECT kinds_cnt FROM cte_day_kind_stats dks WHERE dks.day = a.day), 0)
+        )::numeric
+      )
     )::int AS per_kind_cap
   FROM cte_ranked a
 )`
@@ -195,30 +214,35 @@ cte_start_nodes AS (
   FROM (SELECT DISTINCT day FROM cte_per_day) pd
 )`
 }
+
 func buildRouteCTE() string {
 	return `
-cte_route AS (
+cte_route (
+  day, step,
+  id, title, address, description, lon, lat, kind, tier, tags, images,
+  leg_km, visited, visited_kinds
+) AS (
   -- старт на каждый день
   SELECT
     s.day,
     1 AS step,
-    cand.id, cand.title, cand.address, cand.lon, cand.lat, cand.kind, cand.tier, cand.tags,
+    c.id, c.title, c.address, c.description, c.lon, c.lat, c.kind, c.tier, c.tags, c.images,
     2 * 6371 * asin(
       sqrt(
-        sin(radians((cand.lat - s.cur_lat)/2))^2 +
-        cos(radians(s.cur_lat)) * cos(radians(cand.lat)) *
-        sin(radians((cand.lon - s.cur_lon)/2))^2
+        sin(radians((c.lat - s.cur_lat)/2))^2 +
+        cos(radians(s.cur_lat)) * cos(radians(c.lat)) *
+        sin(radians((c.lon - s.cur_lon)/2))^2
       )
     ) AS leg_km,
-    ARRAY[cand.id]                AS visited,
-    ARRAY[cand.kind]::kind_enum[] AS visited_kinds
+    ARRAY[c.id]                AS visited,
+    ARRAY[c.kind]::kind_enum[] AS visited_kinds
   FROM cte_start_nodes s
-  JOIN LATERAL (
+  CROSS JOIN LATERAL (
     SELECT pd.*
     FROM cte_per_day pd
     WHERE
       pd.day = s.day
-      AND pd.slot_rank   <= GREATEST(1, (SELECT per_day_limit FROM cTE_params))
+      AND pd.slot_rank   <= GREATEST(1, (SELECT per_day_limit FROM cte_params))
       AND pd.per_kind_rn <= pd.per_kind_cap
     ORDER BY
       pd.per_kind_rn,
@@ -230,7 +254,7 @@ cte_route AS (
         )
       )
     LIMIT 1
-  ) AS cand ON TRUE
+  ) AS c
 
   UNION ALL
 
@@ -238,18 +262,18 @@ cte_route AS (
   SELECT
     r.day,
     r.step + 1,
-    cand.id, cand.title, cand.address, cand.lon, cand.lat, cand.kind, cand.tier, cand.tags,
+    c.id, c.title, c.address, c.description, c.lon, c.lat, c.kind, c.tier, c.tags, c.images,
     2 * 6371 * asin(
       sqrt(
-        sin(radians((cand.lat - r.lat)/2))^2 +
-        cos(radians(r.lat)) * cos(radians(cand.lat)) *
-        sin(radians((cand.lon - r.lon)/2))^2
+        sin(radians((c.lat - r.lat)/2))^2 +
+        cos(radians(r.lat)) * cos(radians(c.lat)) *
+        sin(radians((c.lon - r.lon)/2))^2
       )
     ) AS leg_km,
-    r.visited || cand.id,
-    r.visited_kinds || cand.kind
+    r.visited || c.id,
+    r.visited_kinds || c.kind
   FROM cte_route r
-  JOIN LATERAL (
+  CROSS JOIN LATERAL (
     SELECT pd.*
     FROM cte_per_day pd
     WHERE
@@ -268,7 +292,7 @@ cte_route AS (
         )
       )
     LIMIT 1
-  ) AS cand ON TRUE
+  ) AS c
   WHERE r.step < GREATEST(1, (SELECT per_day_limit FROM cte_params))
 )`
 }
@@ -292,11 +316,14 @@ FROM (
           'step', step,
           'id', id,
           'title', title,
+          'description', description,
           'address', address,
           'lon', lon,
           'lat', lat,
           'kind', kind::text,
           'tier', tier::text,
+ 'tags', COALESCE(tags, '{}'::jsonb),
+ 'images', to_jsonb(COALESCE(images, ARRAY[]::uuid[])),
           'leg_km', round(leg_km::numeric, 2)
         ) ORDER BY step
       )
