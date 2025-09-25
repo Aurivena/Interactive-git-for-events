@@ -198,75 +198,77 @@ cte_start_nodes AS (
 func buildRouteCTE() string {
 	return `
 cte_route AS (
-  -- старт на каждый день: берём ближайшую точку, но с приоритетом "ещё не было такого вида"
+  -- старт на каждый день
   SELECT
     s.day,
     1 AS step,
-    p.id, p.title, p.address, p.lon, p.lat, p.kind, p.tier, p.tags,
+    cand.id, cand.title, cand.address, cand.lon, cand.lat, cand.kind, cand.tier, cand.tags,
     2 * 6371 * asin(
       sqrt(
-        sin(radians((p.lat - s.cur_lat)/2))^2 +
-        cos(radians(s.cur_lat)) * cos(radians(p.lat)) *
-        sin(radians((p.lon - s.cur_lon)/2))^2
+        sin(radians((cand.lat - s.cur_lat)/2))^2 +
+        cos(radians(s.cur_lat)) * cos(radians(cand.lat)) *
+        sin(radians((cand.lon - s.cur_lon)/2))^2
       )
     ) AS leg_km,
-    ARRAY[p.id] AS visited,
-    ARRAY[p.kind]::kind_enum[] AS visited_kinds
+    ARRAY[cand.id]                AS visited,
+    ARRAY[cand.kind]::kind_enum[] AS visited_kinds
   FROM cte_start_nodes s
   JOIN LATERAL (
-    SELECT * FROM cte_per_day pd
+    SELECT pd.*
+    FROM cte_per_day pd
     WHERE
       pd.day = s.day
-      AND pd.slot_rank   <= GREATEST(1, (SELECT per_day_limit FROM cte_params))
+      AND pd.slot_rank   <= GREATEST(1, (SELECT per_day_limit FROM cTE_params))
       AND pd.per_kind_rn <= pd.per_kind_cap
-ORDER BY
-  pd.per_kind_rn,
-  2 * 6371 * asin(
-    sqrt(
-      sin(radians((pd.lat - s.cur_lat)/2))^2 +
-      cos(radians(s.cur_lat)) * cos(radians(pd.lat)) *
-      sin(radians((pd.lon - s.cur_lon)/2))^2
-    )
-  )
+    ORDER BY
+      pd.per_kind_rn,
+      2 * 6371 * asin(
+        sqrt(
+          sin(radians((pd.lat - s.cur_lat)/2))^2 +
+          cos(radians(s.cur_lat)) * cos(radians(pd.lat)) *
+          sin(radians((pd.lon - s.cur_lon)/2))^2
+        )
+      )
     LIMIT 1
-  ) p ON TRUE
+  ) AS cand ON TRUE
 
   UNION ALL
 
-  -- продолжение: сначала вид, которого ещё не было в этом дне, и не превышаем cap
+  -- продолжение того же дня
   SELECT
     r.day,
     r.step + 1,
-    p.id, p.title, p.address, p.lon, p.lat, p.kind, p.tier, p.tags,
+    cand.id, cand.title, cand.address, cand.lon, cand.lat, cand.kind, cand.tier, cand.tags,
     2 * 6371 * asin(
       sqrt(
-        sin(radians((p.lat - r.lat)/2))^2 +
-        cos(radians(r.lat)) * cos(radians(p.lat)) *
-        sin(radians((p.lon - r.lon)/2))^2
+        sin(radians((cand.lat - r.lat)/2))^2 +
+        cos(radians(r.lat)) * cos(radians(cand.lat)) *
+        sin(radians((cand.lon - r.lon)/2))^2
       )
     ) AS leg_km,
-    r.visited || p.id,
-    r.visited_kinds || p.kind
+    r.visited || cand.id,
+    r.visited_kinds || cand.kind
   FROM cte_route r
   JOIN LATERAL (
-    SELECT * FROM cte_per_day pd
+    SELECT pd.*
+    FROM cte_per_day pd
     WHERE
       pd.day = r.day
       AND NOT (pd.id = ANY (r.visited))
       AND pd.slot_rank   <= GREATEST(1, (SELECT per_day_limit FROM cte_params))
       AND pd.per_kind_rn <= pd.per_kind_cap
-ORDER BY
-  CASE WHEN NOT (pd.kind = ANY (r.visited_kinds)) THEN 0 ELSE 1 END,
-  pd.per_kind_rn,
-  2 * 6371 * asin(
-    sqrt(
-      sin(radians((pd.lat - r.lat)/2))^2 +
-      cos(radians(r.lat)) * cos(radians(pd.lat)) *
-      sin(radians((pd.lon - r.lon)/2))^2
-    )
-  )
+    ORDER BY
+      CASE WHEN NOT (pd.kind = ANY (r.visited_kinds)) THEN 0 ELSE 1 END,
+      pd.per_kind_rn,
+      2 * 6371 * asin(
+        sqrt(
+          sin(radians((pd.lat - r.lat)/2))^2 +
+          cos(radians(r.lat)) * cos(radians(pd.lat)) *
+          sin(radians((pd.lon - r.lon)/2))^2
+        )
+      )
     LIMIT 1
-  ) p ON TRUE
+  ) AS cand ON TRUE
   WHERE r.step < GREATEST(1, (SELECT per_day_limit FROM cte_params))
 )`
 }

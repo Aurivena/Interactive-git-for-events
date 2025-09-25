@@ -20,7 +20,7 @@ import (
 // @Success     204 {object} nil "Успешное сохранение"
 // @Failure     400 {object} entity.AppErrorDoc "Некорректный запрос (невалидный JSON)"
 // @Failure     500 {object} entity.AppErrorDoc "Внутренняя ошибка сервера"
-// @Router      /client/survey [post]
+// @Router      /client/upsert [post]
 func (h *Handler) Upsert(c *gin.Context) {
 	var input entity.Survey
 	if err := c.ShouldBindBodyWithJSON(&input); err != nil {
