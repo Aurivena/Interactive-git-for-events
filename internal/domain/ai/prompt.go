@@ -18,7 +18,7 @@ const SendPrompt = `
 2) "count" — число. Если пользователь не назвал количество — ставь 0.
 3) "tier" — одно значение ИЗ списка: ["economy","value","standard","premium","upscale"].
    Если в запросе нет прямых подсказок — определи по анкете пользователя:
-   comfortService 1–2 → "economy" / "value"; 3 → "standard"; 4 → "premium"; 5 → "upscale".
+   comfortService 1–2 → "economy" / "value"; 3-4 → "standard"; 3-4 → "premium"; 5 → "upscale".
 4) "dayOfTheWeek" — массив дней недели из: ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].
    Преобразуй относительные слова: "сегодня","завтра","послезавтра","в выходные" и т.п. Если дней нет — [].
 5) "time" — локальное время посещения:

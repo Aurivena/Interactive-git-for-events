@@ -110,7 +110,7 @@ func (a *Application) GenerateTour(input *entity.TourInput, sessionID string) (*
 		aiOutput = entity.RouteParams{
 			DateTour: entity.DateTour{
 				DateFrom: "2025-09-25",
-				DateTo:   "2025-09-27",
+				DateTo:   "2025-09-30",
 			},
 			PerDayLimit:  5,
 			Tier:         []string{"standard", "economy", "value", "premium"},
