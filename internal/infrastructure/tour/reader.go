@@ -9,7 +9,7 @@ import (
 
 type planEnvelopeDays struct {
 	DateTour *entity.DateTour `json:"date_tour"`
-	Days     []entity.DayPlan `json:"placesInfo"` // поддерживаем твой текущий json тег
+	Days     []entity.DayPlan `json:"placesInfo"`
 }
 
 func normalizeTourOutput(dbFrom, dbTo time.Time, env *planEnvelopeDays, raw []byte) (entity.TourOutput, error) {
@@ -22,7 +22,6 @@ func normalizeTourOutput(dbFrom, dbTo time.Time, env *planEnvelopeDays, raw []by
 		Days: nil,
 	}
 
-	// Если конверт валиден — подставим даты из него (если есть)
 	if env != nil && env.DateTour != nil {
 		if env.DateTour.DateFrom != "" {
 			out.DateFrom = env.DateTour.DateFrom
@@ -32,20 +31,17 @@ func normalizeTourOutput(dbFrom, dbTo time.Time, env *planEnvelopeDays, raw []by
 		}
 	}
 
-	// 1) Попытка: конверт с days
 	if env != nil && len(env.Days) > 0 {
 		out.Days = env.Days
 		return out, nil
 	}
 
-	// 2) Попытка: сырые данные — массив дней
 	var asDays []entity.DayPlan
 	if err := json.Unmarshal(raw, &asDays); err == nil && len(asDays) > 0 && asDays[0].Day != "" {
 		out.Days = asDays
 		return out, nil
 	}
 
-	// 3) Попытка: сырые данные — плоский массив мест → упакуем в один день = date_from
 	var flat []entity.PlaceInfo
 	if err := json.Unmarshal(raw, &flat); err == nil && len(flat) > 0 {
 		out.Days = []entity.DayPlan{
@@ -54,7 +50,6 @@ func normalizeTourOutput(dbFrom, dbTo time.Time, env *planEnvelopeDays, raw []by
 		return out, nil
 	}
 
-	// 4) Ничего не распарсили — вернём пустые дни
 	return out, errors.New("unsupported plan format")
 }
 
@@ -78,7 +73,7 @@ ORDER BY date_from DESC
 	out := make([]entity.TourOutput, 0, len(rows))
 	for _, rr := range rows {
 		var env planEnvelopeDays
-		_ = json.Unmarshal(rr.Plan, &env) // мягкая попытка; ошибки игнорим, дальше нормализуем
+		_ = json.Unmarshal(rr.Plan, &env)
 		tout, _ := normalizeTourOutput(rr.DateFrom, rr.DateTo, &env, rr.Plan)
 		out = append(out, tout)
 	}
