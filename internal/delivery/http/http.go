@@ -51,23 +51,23 @@ func (h *Http) InitHTTPHttps(config *entity.ServerConfig) *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	api := gHttp.Group("/api", h.Middleware.Session)
+	api := gHttp.Group("/api")
 	{
 
-		aiRouter := api.Group("/ai")
+		aiRouter := api.Group("/ai", h.Middleware.Session)
 		{
 			aiRouter.POST("/send", h.Ai.Send)
 			aiRouter.POST("/generate/tour", h.Ai.GenerateTour)
 			aiRouter.GET("/history", h.History.ListHistory)
 		}
 
-		tours := api.Group("/tours")
+		tours := api.Group("/tours", h.Middleware.Session)
 		{
 			tours.GET("", h.Tour.All)
 			tours.GET("/:id", h.Tour.ByID)
 		}
 
-		clientApp := api.Group("/client")
+		clientApp := api.Group("/client", h.Middleware.Session)
 		{
 			clientApp.POST("/upsert", h.Client.Upsert)
 		}
